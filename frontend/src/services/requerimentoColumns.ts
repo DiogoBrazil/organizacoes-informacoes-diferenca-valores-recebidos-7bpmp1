@@ -9,6 +9,14 @@ export function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR").format(new Date(`${value}T00:00:00`));
 }
 
+export function formatTime(value: string) {
+  return value?.slice(0, 8) ?? "";
+}
+
+export function formatDateTime(dateValue: string, timeValue: string) {
+  return `${formatDate(dateValue)} ${formatTime(timeValue)}`;
+}
+
 export function simNao(value: boolean) {
   return value ? "SIM" : "NÃO";
 }
@@ -29,6 +37,7 @@ export const requerimentoReportColumns: RequerimentoReportColumn[] = [
   { header: "Ordem", value: (_item, index) => index + 1 },
   { header: "Processo SEI", value: (item) => item.num_processo_sei_requerimento },
   { header: "Data de Recebimento", value: (item) => formatDate(item.data_recebimento_opm) },
+  { header: "Hora de Recebimento", value: (item) => formatTime(item.hora_recebimento_opm) },
   { header: "Nome", value: (item) => item.policial.nome_completo },
   { header: "RE", value: (item) => item.policial.matricula },
   { header: "Nº Certidão SEI", value: (item) => item.num_sei_certidao_opm },

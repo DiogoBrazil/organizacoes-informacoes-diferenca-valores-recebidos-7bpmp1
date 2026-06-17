@@ -1,7 +1,7 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, time
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Time, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,6 +19,7 @@ class Requerimento(Base):
         String(30), unique=True, index=True, nullable=False
     )
     data_recebimento_opm: Mapped[date] = mapped_column(Date, nullable=False)
+    hora_recebimento_opm: Mapped[time] = mapped_column(Time, nullable=False)
     num_sei_certidao_opm: Mapped[str] = mapped_column(String(40), nullable=False)
     tem_afastamentos: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     gozou_ferias_5_anos: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

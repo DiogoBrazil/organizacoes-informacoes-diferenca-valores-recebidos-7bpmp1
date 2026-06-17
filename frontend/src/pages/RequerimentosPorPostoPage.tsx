@@ -10,7 +10,7 @@ import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
 import { exportRequerimentosExcel, exportRequerimentosPdf } from "../services/exporters";
 import { parseTotalCount } from "../services/masks";
-import { formatDate } from "../services/requerimentoColumns";
+import { formatDateTime } from "../services/requerimentoColumns";
 import { POSTOS_GRADUACOES, type PostoGraduacao, type Requerimento } from "../types";
 
 const PER_PAGE = 10;
@@ -164,7 +164,7 @@ export default function RequerimentosPorPostoPage() {
               <tr>
                 <th className="border border-slate-300 px-3 py-3">Ordem</th>
                 <th className="border border-slate-300 px-3 py-3">Processo SEI</th>
-                <th className="border border-slate-300 px-3 py-3">Data de Recebimento</th>
+                <th className="border border-slate-300 px-3 py-3">Data/Hora de Recebimento</th>
                 <th className="border border-slate-300 px-3 py-3">Nome</th>
                 <th className="border border-slate-300 px-3 py-3">RE</th>
                 <th className="border border-slate-300 px-3 py-3">Ações</th>
@@ -177,7 +177,9 @@ export default function RequerimentosPorPostoPage() {
                     {(page - 1) * PER_PAGE + index + 1}
                   </td>
                   <td className="border border-slate-300 px-3 py-3">{item.num_processo_sei_requerimento}</td>
-                  <td className="border border-slate-300 px-3 py-3">{formatDate(item.data_recebimento_opm)}</td>
+                  <td className="border border-slate-300 px-3 py-3">
+                    {formatDateTime(item.data_recebimento_opm, item.hora_recebimento_opm)}
+                  </td>
                   <td className="border border-slate-300 px-3 py-3">{item.policial.nome_completo}</td>
                   <td className="border border-slate-300 px-3 py-3">{item.policial.matricula}</td>
                   <td className="border border-slate-300 px-3 py-3 align-middle">

@@ -22,6 +22,7 @@ const initialForm: RequerimentoPayload = {
   policial_id: "",
   num_processo_sei_requerimento: "",
   data_recebimento_opm: "",
+  hora_recebimento_opm: "",
   num_sei_certidao_opm: "",
   tem_afastamentos: false,
   gozou_ferias_5_anos: false,
@@ -113,6 +114,7 @@ export default function RequerimentoFormPage() {
             policial_id: requerimento.policial_id,
             num_processo_sei_requerimento: requerimento.num_processo_sei_requerimento,
             data_recebimento_opm: requerimento.data_recebimento_opm,
+            hora_recebimento_opm: requerimento.hora_recebimento_opm,
             num_sei_certidao_opm: requerimento.num_sei_certidao_opm,
             tem_afastamentos: requerimento.tem_afastamentos,
             gozou_ferias_5_anos: requerimento.gozou_ferias_5_anos,
@@ -193,7 +195,7 @@ export default function RequerimentoFormPage() {
       />
       <form onSubmit={handleSubmit} className="space-y-6 rounded border border-slate-200 bg-white p-5 shadow-sm">
         <FieldSection title="Identificação do Processo">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <label className="block">
               <span className="text-sm font-semibold">Nº Processo SEI</span>
               <input
@@ -213,6 +215,17 @@ export default function RequerimentoFormPage() {
                 type="date"
                 value={form.data_recebimento_opm}
                 onChange={(event) => updateField("data_recebimento_opm", event.target.value)}
+                required
+                className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold">Hora Recebimento OPM</span>
+              <input
+                type="time"
+                step="1"
+                value={form.hora_recebimento_opm}
+                onChange={(event) => updateField("hora_recebimento_opm", event.target.value)}
                 required
                 className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
               />

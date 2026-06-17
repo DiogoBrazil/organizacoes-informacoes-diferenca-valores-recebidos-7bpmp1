@@ -50,6 +50,7 @@ def list_requerimentos(
     stmt = stmt.options(joinedload(Requerimento.policial)).order_by(
         hierarchy.asc(),
         Requerimento.data_recebimento_opm.asc(),
+        Requerimento.hora_recebimento_opm.asc(),
         PolicialMilitar.nome_completo.asc(),
     )
     if limit is not None:

@@ -7,7 +7,7 @@ import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
-import { currencyWithSymbol, displayText, formatDate } from "../services/requerimentoColumns";
+import { currencyWithSymbol, displayText, formatDate, formatTime } from "../services/requerimentoColumns";
 import type { Requerimento } from "../types";
 
 const anosAbono = [2021, 2022, 2023, 2024, 2025] as const;
@@ -80,9 +80,10 @@ export default function RequerimentoViewPage() {
 
       <div className="space-y-5">
         <DetailSection title="Identificação do Processo">
-          <dl className="grid gap-3 md:grid-cols-3">
+          <dl className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             <DetailItem label="Processo SEI" value={displayText(requerimento.num_processo_sei_requerimento)} />
             <DetailItem label="Data de Recebimento" value={formatDate(requerimento.data_recebimento_opm)} />
+            <DetailItem label="Hora de Recebimento" value={formatTime(requerimento.hora_recebimento_opm)} />
             <DetailItem label="Nº Certidão SEI" value={displayText(requerimento.num_sei_certidao_opm)} />
           </dl>
         </DetailSection>

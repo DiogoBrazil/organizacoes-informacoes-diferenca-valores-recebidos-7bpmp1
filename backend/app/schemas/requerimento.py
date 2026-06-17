@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 import re
 from uuid import UUID
 
@@ -11,6 +11,7 @@ class RequerimentoBase(BaseModel):
     policial_id: UUID
     num_processo_sei_requerimento: str = Field(min_length=19, max_length=19)
     data_recebimento_opm: date
+    hora_recebimento_opm: time
     num_sei_certidao_opm: str = Field(min_length=1, max_length=40)
     tem_afastamentos: bool = False
     gozou_ferias_5_anos: bool = False
