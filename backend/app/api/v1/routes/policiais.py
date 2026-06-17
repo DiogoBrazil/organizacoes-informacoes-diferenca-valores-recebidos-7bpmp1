@@ -50,7 +50,11 @@ def buscar_policial(policial_id: UUID, db: DbSession, _: CurrentUser) -> Policia
 def criar_policial(data: PolicialCreate, db: DbSession, _: CurrentUser) -> PolicialPublic:
     if crud.get_policial_by_matricula(db, data.matricula):
         raise HTTPException(status_code=409, detail="Já existe policial com esta matrícula.")
-    return crud.create_policial(db, data)
+    try:
+        return crud.create_policial(db, data)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Já existe policial com esta matrícula.") from exc
 
 
 @router.put("/{policial_id}", response_model=PolicialPublic)

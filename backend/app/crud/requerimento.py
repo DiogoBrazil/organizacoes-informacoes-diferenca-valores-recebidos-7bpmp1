@@ -18,6 +18,15 @@ def get_requerimento(db: Session, requerimento_id: UUID) -> Requerimento | None:
     return db.scalar(stmt)
 
 
+def get_requerimento_by_processo_sei(
+    db: Session, num_processo_sei_requerimento: str
+) -> Requerimento | None:
+    stmt = select(Requerimento).where(
+        Requerimento.num_processo_sei_requerimento == num_processo_sei_requerimento
+    )
+    return db.scalar(stmt)
+
+
 def list_requerimentos(
     db: Session,
     posto_graduacao: str | None = None,

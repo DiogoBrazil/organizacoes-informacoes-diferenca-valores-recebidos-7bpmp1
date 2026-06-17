@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
+from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.constants import POSTOS_GRADUACOES
@@ -55,7 +56,13 @@ def criar_requerimento(
 ) -> RequerimentoPublic:
     if not policial_crud.get_policial(db, data.policial_id):
         raise HTTPException(status_code=404, detail="Policial militar não encontrado.")
-    return crud.create_requerimento(db, data)
+    if crud.get_requerimento_by_processo_sei(db, data.num_processo_sei_requerimento):
+        raise HTTPException(status_code=409, detail="Já existe requerimento com este processo SEI.")
+    try:
+        return crud.create_requerimento(db, data)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Já existe requerimento com este processo SEI.") from exc
 
 
 @router.put("/{requerimento_id}", response_model=RequerimentoPublic)
@@ -67,7 +74,14 @@ def atualizar_requerimento(
         raise HTTPException(status_code=404, detail="Requerimento não encontrado.")
     if not policial_crud.get_policial(db, data.policial_id):
         raise HTTPException(status_code=404, detail="Policial militar não encontrado.")
-    return crud.update_requerimento(db, requerimento, data)
+    existente = crud.get_requerimento_by_processo_sei(db, data.num_processo_sei_requerimento)
+    if existente and existente.id != requerimento.id:
+        raise HTTPException(status_code=409, detail="Já existe requerimento com este processo SEI.")
+    try:
+        return crud.update_requerimento(db, requerimento, data)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Já existe requerimento com este processo SEI.") from exc
 
 
 @router.delete("/{requerimento_id}", status_code=status.HTTP_204_NO_CONTENT)

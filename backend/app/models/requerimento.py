@@ -15,7 +15,9 @@ class Requerimento(Base):
     policial_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("policiais_militares.id", ondelete="CASCADE"), nullable=False
     )
-    num_processo_sei_requerimento: Mapped[str] = mapped_column(String(30), nullable=False)
+    num_processo_sei_requerimento: Mapped[str] = mapped_column(
+        String(30), unique=True, index=True, nullable=False
+    )
     data_recebimento_opm: Mapped[date] = mapped_column(Date, nullable=False)
     num_sei_certidao_opm: Mapped[str] = mapped_column(String(40), nullable=False)
     tem_afastamentos: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

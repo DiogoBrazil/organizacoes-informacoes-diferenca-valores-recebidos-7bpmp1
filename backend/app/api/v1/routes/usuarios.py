@@ -38,7 +38,11 @@ def buscar_usuario(usuario_id: UUID, db: DbSession, _: CurrentUser) -> UsuarioPu
 def criar_usuario(data: UsuarioCreate, db: DbSession, _: CurrentUser) -> UsuarioPublic:
     if crud.get_usuario_by_email(db, data.email):
         raise HTTPException(status_code=409, detail="Já existe usuário com este e-mail.")
-    return crud.create_usuario(db, data)
+    try:
+        return crud.create_usuario(db, data)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Já existe usuário com este e-mail.") from exc
 
 
 @router.put("/{usuario_id}", response_model=UsuarioPublic)

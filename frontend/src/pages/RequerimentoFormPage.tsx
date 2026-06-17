@@ -62,6 +62,7 @@ export default function RequerimentoFormPage() {
   const [saving, setSaving] = useState(false);
   const [policiais, setPoliciais] = useState<Policial[]>([]);
   const [buscaPolicial, setBuscaPolicial] = useState("");
+  const [mostrarBuscaPolicial, setMostrarBuscaPolicial] = useState(false);
   const [form, setForm] = useState<RequerimentoPayload>(initialForm);
 
   const policialSelecionado = useMemo(
@@ -70,6 +71,7 @@ export default function RequerimentoFormPage() {
   );
 
   const policiaisFiltrados = useMemo(() => {
+    if (!mostrarBuscaPolicial) return [];
     const termo = buscaPolicial.toLowerCase().trim();
     if (!termo) return policiais.slice(0, 8);
     return policiais
@@ -79,7 +81,7 @@ export default function RequerimentoFormPage() {
           String(policial.matricula).includes(termo)
       )
       .slice(0, 8);
-  }, [policiais, buscaPolicial]);
+  }, [policiais, buscaPolicial, mostrarBuscaPolicial]);
 
   useEffect(() => {
     async function carregar() {
@@ -233,30 +235,37 @@ export default function RequerimentoFormPage() {
               <span className="text-sm font-semibold">Buscar Policial</span>
               <input
                 value={buscaPolicial}
-                onChange={(event) => setBuscaPolicial(event.target.value)}
+                onFocus={() => setMostrarBuscaPolicial(true)}
+                onChange={(event) => {
+                  setBuscaPolicial(event.target.value);
+                  setMostrarBuscaPolicial(true);
+                }}
                 placeholder="Digite matrícula ou nome"
                 className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
               />
-              <div className="mt-2 max-h-48 overflow-auto rounded border border-slate-200">
-                {policiaisFiltrados.map((policial) => (
-                  <button
-                    key={policial.id}
-                    type="button"
-                    onClick={() => {
-                      updateField("policial_id", policial.id);
-                      setBuscaPolicial(`${policial.matricula} - ${policial.nome_completo}`);
-                    }}
-                    className={`block w-full px-3 py-2 text-left text-sm hover:bg-blue-50 ${
-                      policial.id === form.policial_id ? "bg-blue-50 font-semibold" : ""
-                    }`}
-                  >
-                    {policial.matricula} - {policial.nome_completo}
-                  </button>
-                ))}
-                {!policiaisFiltrados.length ? (
-                  <div className="px-3 py-3 text-sm text-gov-muted">Nenhum policial encontrado.</div>
-                ) : null}
-              </div>
+              {mostrarBuscaPolicial ? (
+                <div className="mt-2 max-h-48 overflow-auto rounded border border-slate-200">
+                  {policiaisFiltrados.map((policial) => (
+                    <button
+                      key={policial.id}
+                      type="button"
+                      onClick={() => {
+                        updateField("policial_id", policial.id);
+                        setBuscaPolicial(`${policial.matricula} - ${policial.nome_completo}`);
+                        setMostrarBuscaPolicial(false);
+                      }}
+                      className={`block w-full px-3 py-2 text-left text-sm hover:bg-blue-50 ${
+                        policial.id === form.policial_id ? "bg-blue-50 font-semibold" : ""
+                      }`}
+                    >
+                      {policial.matricula} - {policial.nome_completo}
+                    </button>
+                  ))}
+                  {buscaPolicial.trim() && !policiaisFiltrados.length ? (
+                    <div className="px-3 py-3 text-sm text-gov-muted">Nenhum policial encontrado.</div>
+                  ) : null}
+                </div>
+              ) : null}
             </label>
             <label className="block">
               <span className="text-sm font-semibold">Posto/Graduação</span>
