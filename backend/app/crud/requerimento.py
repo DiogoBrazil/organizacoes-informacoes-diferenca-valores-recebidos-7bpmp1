@@ -1,0 +1,69 @@
+from uuid import UUID
+
+from sqlalchemy import case, select
+from sqlalchemy.orm import Session, joinedload
+
+from app.core.constants import POSTO_ORDEM
+from app.models.policial import PolicialMilitar
+from app.models.requerimento import Requerimento
+from app.schemas.requerimento import RequerimentoCreate, RequerimentoUpdate
+
+
+def get_requerimento(db: Session, requerimento_id: UUID) -> Requerimento | None:
+    stmt = (
+        select(Requerimento)
+        .options(joinedload(Requerimento.policial))
+        .where(Requerimento.id == requerimento_id)
+    )
+    return db.scalar(stmt)
+
+
+def list_requerimentos(db: Session, posto_graduacao: str | None = None) -> list[Requerimento]:
+    hierarchy = case(POSTO_ORDEM, value=PolicialMilitar.posto_graduacao, else_=999)
+    stmt = (
+        select(Requerimento)
+        .join(Requerimento.policial)
+        .options(joinedload(Requerimento.policial))
+    )
+    if posto_graduacao:
+        stmt = stmt.where(PolicialMilitar.posto_graduacao == posto_graduacao)
+    stmt = stmt.order_by(
+        hierarchy.asc(),
+        Requerimento.data_recebimento_opm.asc(),
+        PolicialMilitar.nome_completo.asc(),
+    )
+    return list(db.scalars(stmt).all())
+
+
+def count_by_posto(db: Session) -> dict[str, int]:
+    stmt = (
+        select(PolicialMilitar.posto_graduacao, Requerimento.id)
+        .join(Requerimento, Requerimento.policial_id == PolicialMilitar.id)
+    )
+    counts: dict[str, int] = {}
+    for posto, _ in db.execute(stmt).all():
+        counts[posto] = counts.get(posto, 0) + 1
+    return counts
+
+
+def create_requerimento(db: Session, data: RequerimentoCreate) -> Requerimento:
+    requerimento = Requerimento(**data.model_dump())
+    db.add(requerimento)
+    db.commit()
+    db.refresh(requerimento)
+    return get_requerimento(db, requerimento.id) or requerimento
+
+
+def update_requerimento(
+    db: Session, requerimento: Requerimento, data: RequerimentoUpdate
+) -> Requerimento:
+    for field, value in data.model_dump().items():
+        setattr(requerimento, field, value)
+    db.commit()
+    db.refresh(requerimento)
+    return get_requerimento(db, requerimento.id) or requerimento
+
+
+def delete_requerimento(db: Session, requerimento: Requerimento) -> None:
+    db.delete(requerimento)
+    db.commit()
