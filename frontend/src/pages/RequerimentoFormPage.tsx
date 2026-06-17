@@ -6,10 +6,17 @@ import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
+import {
+  maskSeiProcess,
+  normalizeCurrency,
+  normalizeMonthYear,
+  parseTotalCount,
+} from "../services/masks";
 import type { Policial, Requerimento, RequerimentoPayload } from "../types";
 
 const anosAbono = [2021, 2022, 2023, 2024, 2025] as const;
 const anosSaude = [2021, 2022, 2023, 2024, 2025, 2026] as const;
+const PER_PAGE = 10;
 
 const initialForm: RequerimentoPayload = {
   policial_id: "",
@@ -77,8 +84,24 @@ export default function RequerimentoFormPage() {
   useEffect(() => {
     async function carregar() {
       try {
-        const [{ data: policiaisData }, requerimentoResponse] = await Promise.all([
-          api.get<Policial[]>("/policiais"),
+        async function carregarPoliciais() {
+          const primeiraPagina = await api.get<Policial[]>("/policiais", {
+            params: { page: 1, per_page: PER_PAGE },
+          });
+          const total = parseTotalCount(primeiraPagina.headers["x-total-count"]);
+          const totalPaginas = Math.max(1, Math.ceil(total / PER_PAGE));
+          const todos = [...primeiraPagina.data];
+          for (let page = 2; page <= totalPaginas; page += 1) {
+            const { data } = await api.get<Policial[]>("/policiais", {
+              params: { page, per_page: PER_PAGE },
+            });
+            todos.push(...data);
+          }
+          return todos;
+        }
+
+        const [policiaisData, requerimentoResponse] = await Promise.all([
+          carregarPoliciais(),
           editando ? api.get<Requerimento>(`/requerimentos/${id}`) : Promise.resolve(null),
         ]);
         setPoliciais(policiaisData);
@@ -132,6 +155,10 @@ export default function RequerimentoFormPage() {
       showToast("Selecione um policial militar.", "error");
       return;
     }
+    if (!/^\d{4}\.\d{6}\/\d{4}-\d{2}$/.test(form.num_processo_sei_requerimento)) {
+      showToast("Informe o processo SEI no formato 0000.000000/0000-00.", "error");
+      return;
+    }
     setSaving(true);
     try {
       if (editando) {
@@ -170,10 +197,11 @@ export default function RequerimentoFormPage() {
               <input
                 value={form.num_processo_sei_requerimento}
                 onChange={(event) =>
-                  updateField("num_processo_sei_requerimento", event.target.value)
+                  updateField("num_processo_sei_requerimento", maskSeiProcess(event.target.value))
                 }
                 required
                 placeholder="0000.000000/0000-00"
+                maxLength={19}
                 className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
               />
             </label>
@@ -286,9 +314,10 @@ export default function RequerimentoFormPage() {
                   <input
                     value={(form[`abono_pecuniario_${ano}` as keyof RequerimentoPayload] as string) ?? ""}
                     onChange={(event) =>
-                      updateField(`abono_pecuniario_${ano}` as keyof RequerimentoPayload, event.target.value as never)
+                      updateField(`abono_pecuniario_${ano}` as keyof RequerimentoPayload, normalizeMonthYear(event.target.value) as never)
                     }
-                    placeholder="ex: out./2022"
+                    placeholder="ex: out/2022"
+                    maxLength={8}
                     className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
                   />
                 </label>
@@ -297,9 +326,10 @@ export default function RequerimentoFormPage() {
                   <input
                     value={(form[`ferias_1_3_${ano}` as keyof RequerimentoPayload] as string) ?? ""}
                     onChange={(event) =>
-                      updateField(`ferias_1_3_${ano}` as keyof RequerimentoPayload, event.target.value as never)
+                      updateField(`ferias_1_3_${ano}` as keyof RequerimentoPayload, normalizeMonthYear(event.target.value) as never)
                     }
-                    placeholder="ex: out./2022"
+                    placeholder="ex: out/2022"
+                    maxLength={8}
                     className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
                   />
                 </label>
@@ -316,9 +346,13 @@ export default function RequerimentoFormPage() {
                 <input
                   value={(form[`auxilio_saude_${ano}` as keyof RequerimentoPayload] as string) ?? ""}
                   onChange={(event) =>
-                    updateField(`auxilio_saude_${ano}` as keyof RequerimentoPayload, event.target.value as never)
+                    updateField(`auxilio_saude_${ano}` as keyof RequerimentoPayload, event.target.value.replace(/[^\d,]/g, "") as never)
+                  }
+                  onBlur={(event) =>
+                    updateField(`auxilio_saude_${ano}` as keyof RequerimentoPayload, normalizeCurrency(event.target.value) as never)
                   }
                   placeholder="ex: 50,00"
+                  inputMode="decimal"
                   className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
                 />
               </label>

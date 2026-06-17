@@ -21,6 +21,10 @@ export function displayText(value: string | number | null | undefined) {
   return value === null || value === undefined || value === "" ? "-" : String(value);
 }
 
+export function currencyWithSymbol(value: string | null | undefined) {
+  return value ? `R$ ${value}` : "-";
+}
+
 export const requerimentoReportColumns: RequerimentoReportColumn[] = [
   { header: "Ordem", value: (_item, index) => index + 1 },
   { header: "Processo SEI", value: (item) => item.num_processo_sei_requerimento },
@@ -44,12 +48,12 @@ export const requerimentoReportColumns: RequerimentoReportColumn[] = [
   { header: "1/3 ferias 2024", value: (item) => text(item.ferias_1_3_2024) },
   { header: "Abono Pecuniario 2025", value: (item) => text(item.abono_pecuniario_2025) },
   { header: "1/3 ferias 2025", value: (item) => text(item.ferias_1_3_2025) },
-  { header: "Auxilio Saúde 2021", value: (item) => text(item.auxilio_saude_2021) },
-  { header: "Auxilio Saúde 2022", value: (item) => text(item.auxilio_saude_2022) },
-  { header: "Auxilio Saúde 2023", value: (item) => text(item.auxilio_saude_2023) },
-  { header: "Auxilio Saúde 2024", value: (item) => text(item.auxilio_saude_2024) },
-  { header: "Auxilio Saúde 2025", value: (item) => text(item.auxilio_saude_2025) },
-  { header: "Auxilio Saúde 2026", value: (item) => text(item.auxilio_saude_2026) },
+  { header: "Auxilio Saúde 2021", value: (item) => currencyWithSymbol(item.auxilio_saude_2021) },
+  { header: "Auxilio Saúde 2022", value: (item) => currencyWithSymbol(item.auxilio_saude_2022) },
+  { header: "Auxilio Saúde 2023", value: (item) => currencyWithSymbol(item.auxilio_saude_2023) },
+  { header: "Auxilio Saúde 2024", value: (item) => currencyWithSymbol(item.auxilio_saude_2024) },
+  { header: "Auxilio Saúde 2025", value: (item) => currencyWithSymbol(item.auxilio_saude_2025) },
+  { header: "Auxilio Saúde 2026", value: (item) => currencyWithSymbol(item.auxilio_saude_2026) },
 ];
 
 export function requerimentoReportRows(requerimentos: Requerimento[]) {

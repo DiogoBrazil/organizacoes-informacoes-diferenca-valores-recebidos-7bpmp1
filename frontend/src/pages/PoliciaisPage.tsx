@@ -1,18 +1,24 @@
 import { Edit, Plus, Search, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ConfirmModal from "../components/ConfirmModal";
 import LoadingState from "../components/LoadingState";
+import Pagination from "../components/Pagination";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
+import { parseTotalCount } from "../services/masks";
 import { POSTOS_GRADUACOES, type Policial, type PostoGraduacao } from "../types";
+
+const PER_PAGE = 10;
 
 export default function PoliciaisPage() {
   const [policiais, setPoliciais] = useState<Policial[]>([]);
   const [busca, setBusca] = useState("");
   const [posto, setPosto] = useState<PostoGraduacao | "">("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [removendo, setRemovendo] = useState<Policial | null>(null);
   const { showToast } = useToast();
@@ -20,8 +26,16 @@ export default function PoliciaisPage() {
   async function carregar() {
     setLoading(true);
     try {
-      const { data } = await api.get<Policial[]>("/policiais");
-      setPoliciais(data);
+      const response = await api.get<Policial[]>("/policiais", {
+        params: {
+          posto_graduacao: posto || undefined,
+          busca: busca || undefined,
+          page,
+          per_page: PER_PAGE,
+        },
+      });
+      setPoliciais(response.data);
+      setTotal(parseTotalCount(response.headers["x-total-count"]));
     } catch (error) {
       showToast(getErrorMessage(error), "error");
     } finally {
@@ -31,19 +45,7 @@ export default function PoliciaisPage() {
 
   useEffect(() => {
     void carregar();
-  }, []);
-
-  const filtrados = useMemo(() => {
-    const termo = busca.toLowerCase().trim();
-    return policiais.filter((policial) => {
-      const postoOk = posto ? policial.posto_graduacao === posto : true;
-      const buscaOk = termo
-        ? policial.nome_completo.toLowerCase().includes(termo) ||
-          String(policial.matricula).includes(termo)
-        : true;
-      return postoOk && buscaOk;
-    });
-  }, [policiais, busca, posto]);
+  }, [busca, page, posto]);
 
   async function confirmarExclusao() {
     if (!removendo) return;
@@ -75,7 +77,10 @@ export default function PoliciaisPage() {
       <div className="mb-4 grid gap-3 rounded border border-slate-200 bg-white p-3 md:grid-cols-[220px_1fr]">
         <select
           value={posto}
-          onChange={(event) => setPosto(event.target.value as PostoGraduacao | "")}
+          onChange={(event) => {
+            setPosto(event.target.value as PostoGraduacao | "");
+            setPage(1);
+          }}
           className="focus-ring rounded border border-slate-300 px-3 py-2"
         >
           <option value="">Todos os postos</option>
@@ -89,7 +94,10 @@ export default function PoliciaisPage() {
           <Search className="h-4 w-4 text-gov-muted" />
           <input
             value={busca}
-            onChange={(event) => setBusca(event.target.value)}
+            onChange={(event) => {
+              setBusca(event.target.value);
+              setPage(1);
+            }}
             placeholder="Buscar por nome ou matrícula"
             className="focus-ring w-full rounded border border-slate-300 px-3 py-2"
           />
@@ -109,7 +117,7 @@ export default function PoliciaisPage() {
               </tr>
             </thead>
             <tbody>
-              {filtrados.map((policial, index) => (
+              {policiais.map((policial, index) => (
                 <tr key={policial.id} className={index % 2 ? "bg-slate-50" : "bg-white"}>
                   <td className="border border-slate-300 px-4 py-3 font-semibold">{policial.posto_graduacao}</td>
                   <td className="border border-slate-300 px-4 py-3">{policial.matricula}</td>
@@ -135,7 +143,7 @@ export default function PoliciaisPage() {
                   </td>
                 </tr>
               ))}
-              {!filtrados.length ? (
+              {!policiais.length ? (
                 <tr>
                   <td colSpan={4} className="border border-slate-300 px-4 py-8 text-center text-gov-muted">
                     Nenhum policial militar encontrado.
@@ -146,6 +154,9 @@ export default function PoliciaisPage() {
           </table>
         </div>
       )}
+      {!loading ? (
+        <Pagination page={page} total={total} perPage={PER_PAGE} onPageChange={setPage} />
+      ) : null}
       <ConfirmModal
         open={Boolean(removendo)}
         title="Excluir policial militar"

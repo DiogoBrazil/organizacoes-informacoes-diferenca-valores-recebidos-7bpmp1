@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import String, case, or_, select
+from sqlalchemy import String, case, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.constants import POSTO_ORDEM
@@ -21,8 +21,12 @@ def get_policial_by_matricula(db: Session, matricula: int) -> PolicialMilitar | 
 
 
 def list_policiais(
-    db: Session, posto_graduacao: str | None = None, busca: str | None = None
-) -> list[PolicialMilitar]:
+    db: Session,
+    posto_graduacao: str | None = None,
+    busca: str | None = None,
+    offset: int = 0,
+    limit: int | None = None,
+) -> tuple[list[PolicialMilitar], int]:
     stmt = select(PolicialMilitar)
     if posto_graduacao:
         stmt = stmt.where(PolicialMilitar.posto_graduacao == posto_graduacao)
@@ -34,8 +38,11 @@ def list_policiais(
                 PolicialMilitar.matricula.cast(String).ilike(like),  # type: ignore[name-defined]
             )
         )
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     stmt = stmt.order_by(_hierarchy_case().asc(), PolicialMilitar.nome_completo.asc())
-    return list(db.scalars(stmt).all())
+    if limit is not None:
+        stmt = stmt.offset(offset).limit(limit)
+    return list(db.scalars(stmt).all()), total
 
 
 def create_policial(db: Session, data: PolicialCreate) -> PolicialMilitar:

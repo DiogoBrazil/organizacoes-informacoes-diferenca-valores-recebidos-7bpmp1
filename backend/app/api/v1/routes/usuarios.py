@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentUser, DbSession
@@ -11,8 +11,19 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[UsuarioPublic])
-def listar_usuarios(db: DbSession, _: CurrentUser) -> list[UsuarioPublic]:
-    return crud.list_usuarios(db)
+def listar_usuarios(
+    db: DbSession,
+    _: CurrentUser,
+    response: Response,
+    busca: str | None = Query(default=None, max_length=80),
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=10, ge=1, le=10),
+) -> list[UsuarioPublic]:
+    usuarios, total = crud.list_usuarios(
+        db, busca=busca, offset=(page - 1) * per_page, limit=per_page
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return usuarios
 
 
 @router.get("/{usuario_id}", response_model=UsuarioPublic)

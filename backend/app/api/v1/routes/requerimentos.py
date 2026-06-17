@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.constants import POSTOS_GRADUACOES
@@ -20,9 +20,23 @@ def contadores_por_posto(db: DbSession, _: CurrentUser) -> dict[str, int]:
 
 @router.get("", response_model=list[RequerimentoPublic])
 def listar_requerimentos(
-    db: DbSession, _: CurrentUser, posto_graduacao: PostoGraduacao | None = None
+    db: DbSession,
+    _: CurrentUser,
+    response: Response,
+    posto_graduacao: PostoGraduacao | None = None,
+    busca: str | None = Query(default=None, max_length=80),
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=10, ge=1, le=10),
 ) -> list[RequerimentoPublic]:
-    return crud.list_requerimentos(db, posto_graduacao=posto_graduacao)
+    requerimentos, total = crud.list_requerimentos(
+        db,
+        posto_graduacao=posto_graduacao,
+        busca=busca,
+        offset=(page - 1) * per_page,
+        limit=per_page,
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return requerimentos
 
 
 @router.get("/{requerimento_id}", response_model=RequerimentoPublic)

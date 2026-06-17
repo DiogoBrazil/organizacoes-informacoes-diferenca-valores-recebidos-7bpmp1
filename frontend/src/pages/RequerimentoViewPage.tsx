@@ -7,7 +7,7 @@ import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
-import { displayText, formatDate } from "../services/requerimentoColumns";
+import { currencyWithSymbol, displayText, formatDate } from "../services/requerimentoColumns";
 import type { Requerimento } from "../types";
 
 const anosAbono = [2021, 2022, 2023, 2024, 2025] as const;
@@ -61,28 +61,22 @@ export default function RequerimentoViewPage() {
 
   return (
     <>
-      <PageHeader
-        title="Visualizar Requerimento"
-        subtitle={requerimento.num_processo_sei_requerimento}
-        actions={
-          <>
-            <Link
-              to={voltarPara}
-              className="focus-ring inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Voltar
-            </Link>
-            <Link
-              to={`/requerimentos/${requerimento.id}/editar`}
-              className="focus-ring inline-flex items-center gap-2 rounded bg-gov-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gov-secondary"
-            >
-              <Edit className="h-4 w-4" />
-              Editar
-            </Link>
-          </>
-        }
-      />
+      <div className="mb-5 flex flex-wrap justify-end gap-2">
+        <Link
+          to={voltarPara}
+          className="focus-ring inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </Link>
+        <Link
+          to={`/requerimentos/${requerimento.id}/editar`}
+          className="focus-ring inline-flex items-center gap-2 rounded bg-gov-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gov-secondary"
+        >
+          <Edit className="h-4 w-4" />
+          Editar
+        </Link>
+      </div>
 
       <div className="space-y-5">
         <DetailSection title="Identificação do Processo">
@@ -142,7 +136,7 @@ export default function RequerimentoViewPage() {
               <DetailItem
                 key={ano}
                 label={`Auxilio Saúde ${ano}`}
-                value={displayText(requerimento[`auxilio_saude_${ano}`])}
+                value={currencyWithSymbol(requerimento[`auxilio_saude_${ano}`])}
               />
             ))}
           </dl>

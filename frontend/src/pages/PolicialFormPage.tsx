@@ -6,6 +6,7 @@ import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
+import { maskMatricula } from "../services/masks";
 import { POSTOS_GRADUACOES, type Policial, type PostoGraduacao } from "../types";
 
 export default function PolicialFormPage() {
@@ -42,6 +43,10 @@ export default function PolicialFormPage() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (form.matricula.length !== 9 || !form.matricula.startsWith("1000")) {
+      showToast("A matrícula deve ter 9 dígitos e iniciar com 1000.", "error");
+      return;
+    }
     setSaving(true);
     const payload = {
       posto_graduacao: form.posto_graduacao,
@@ -92,11 +97,14 @@ export default function PolicialFormPage() {
           <label className="block">
             <span className="text-sm font-semibold">Matrícula</span>
             <input
-              type="number"
-              min={1}
+              inputMode="numeric"
+              maxLength={9}
               value={form.matricula}
-              onChange={(event) => setForm({ ...form, matricula: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, matricula: maskMatricula(event.target.value) })
+              }
               required
+              placeholder="100000000"
               className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
             />
           </label>

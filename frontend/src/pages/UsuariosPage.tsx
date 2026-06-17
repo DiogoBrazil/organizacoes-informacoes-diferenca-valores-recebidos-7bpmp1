@@ -1,17 +1,23 @@
 import { Edit, Plus, Search, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ConfirmModal from "../components/ConfirmModal";
 import LoadingState from "../components/LoadingState";
+import Pagination from "../components/Pagination";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
+import { parseTotalCount } from "../services/masks";
 import type { Usuario } from "../types";
+
+const PER_PAGE = 10;
 
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [busca, setBusca] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [removendo, setRemovendo] = useState<Usuario | null>(null);
   const { showToast } = useToast();
@@ -19,8 +25,11 @@ export default function UsuariosPage() {
   async function carregar() {
     setLoading(true);
     try {
-      const { data } = await api.get<Usuario[]>("/usuarios");
-      setUsuarios(data);
+      const response = await api.get<Usuario[]>("/usuarios", {
+        params: { busca: busca || undefined, page, per_page: PER_PAGE },
+      });
+      setUsuarios(response.data);
+      setTotal(parseTotalCount(response.headers["x-total-count"]));
     } catch (error) {
       showToast(getErrorMessage(error), "error");
     } finally {
@@ -30,17 +39,7 @@ export default function UsuariosPage() {
 
   useEffect(() => {
     void carregar();
-  }, []);
-
-  const filtrados = useMemo(() => {
-    const termo = busca.toLowerCase().trim();
-    if (!termo) return usuarios;
-    return usuarios.filter(
-      (usuario) =>
-        usuario.nome_completo.toLowerCase().includes(termo) ||
-        usuario.email.toLowerCase().includes(termo)
-    );
-  }, [usuarios, busca]);
+  }, [busca, page]);
 
   async function confirmarExclusao() {
     if (!removendo) return;
@@ -73,7 +72,10 @@ export default function UsuariosPage() {
         <Search className="h-4 w-4 text-gov-muted" />
         <input
           value={busca}
-          onChange={(event) => setBusca(event.target.value)}
+          onChange={(event) => {
+            setBusca(event.target.value);
+            setPage(1);
+          }}
           placeholder="Buscar por nome ou e-mail"
           className="focus-ring w-full border-0 bg-transparent outline-none"
         />
@@ -92,7 +94,7 @@ export default function UsuariosPage() {
               </tr>
             </thead>
             <tbody>
-              {filtrados.map((usuario, index) => (
+              {usuarios.map((usuario, index) => (
                 <tr key={usuario.id} className={index % 2 ? "bg-slate-50" : "bg-white"}>
                   <td className="border border-slate-300 px-4 py-3 font-medium">{usuario.nome_completo}</td>
                   <td className="border border-slate-300 px-4 py-3">{usuario.email}</td>
@@ -120,7 +122,7 @@ export default function UsuariosPage() {
                   </td>
                 </tr>
               ))}
-              {!filtrados.length ? (
+              {!usuarios.length ? (
                 <tr>
                   <td colSpan={4} className="border border-slate-300 px-4 py-8 text-center text-gov-muted">
                     Nenhum usuário encontrado.
@@ -131,6 +133,9 @@ export default function UsuariosPage() {
           </table>
         </div>
       )}
+      {!loading ? (
+        <Pagination page={page} total={total} perPage={PER_PAGE} onPageChange={setPage} />
+      ) : null}
       <ConfirmModal
         open={Boolean(removendo)}
         title="Excluir usuário"
