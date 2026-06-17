@@ -12,7 +12,7 @@ const navItems = [
 ];
 
 export default function AppLayout() {
-  const { logout } = useAuth();
+  const { logout, usuario } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isHome = location.pathname === "/";
@@ -58,18 +58,25 @@ export default function AppLayout() {
               Gestão de requerimentos sobre recálculo de valores recebidos
             </h1>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
+          <div
             className={
               isHome
-                ? "focus-ring inline-flex items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm font-semibold text-gov-text hover:bg-slate-50 sm:absolute sm:right-0 sm:top-6"
-                : "focus-ring inline-flex items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm font-semibold text-gov-text hover:bg-slate-50"
+                ? "flex flex-wrap items-center justify-center gap-3 sm:absolute sm:right-0 sm:top-6"
+                : "flex flex-wrap items-center justify-end gap-3"
             }
           >
-            <LogOut className="h-4 w-4" />
-            Sair
-          </button>
+            {usuario ? (
+              <span className="text-sm font-semibold text-gov-muted">Olá, {usuario.nome_completo}</span>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="focus-ring inline-flex items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm font-semibold text-gov-text hover:bg-slate-50"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </button>
+          </div>
         </div>
         {!isHome ? (
           <nav className="page-shell flex gap-1 overflow-x-auto pb-3">
