@@ -81,26 +81,26 @@ export default function UsuariosPage() {
       {loading ? (
         <LoadingState />
       ) : (
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white">
-          <table className="w-full min-w-[760px] text-left text-sm">
+        <div className="overflow-x-auto rounded border border-slate-300 bg-white">
+          <table className="w-full min-w-[760px] border-collapse text-center text-sm">
             <thead className="bg-slate-100 text-gov-muted">
               <tr>
-                <th className="px-4 py-3">Nome Completo</th>
-                <th className="px-4 py-3">E-mail</th>
-                <th className="px-4 py-3">Data de Cadastro</th>
-                <th className="px-4 py-3 text-right">Ações</th>
+                <th className="border border-slate-300 px-4 py-3">Nome Completo</th>
+                <th className="border border-slate-300 px-4 py-3">E-mail</th>
+                <th className="border border-slate-300 px-4 py-3">Data de Cadastro</th>
+                <th className="border border-slate-300 px-4 py-3">Ações</th>
               </tr>
             </thead>
             <tbody>
               {filtrados.map((usuario, index) => (
                 <tr key={usuario.id} className={index % 2 ? "bg-slate-50" : "bg-white"}>
-                  <td className="px-4 py-3 font-medium">{usuario.nome_completo}</td>
-                  <td className="px-4 py-3">{usuario.email}</td>
-                  <td className="px-4 py-3">
+                  <td className="border border-slate-300 px-4 py-3 font-medium">{usuario.nome_completo}</td>
+                  <td className="border border-slate-300 px-4 py-3">{usuario.email}</td>
+                  <td className="border border-slate-300 px-4 py-3">
                     {new Intl.DateTimeFormat("pt-BR").format(new Date(usuario.criado_em))}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
+                  <td className="border border-slate-300 px-4 py-3">
+                    <div className="flex justify-center gap-2">
                       <Link
                         to={`/usuarios/${usuario.id}/editar`}
                         className="focus-ring rounded p-2 text-gov-primary hover:bg-blue-50"
@@ -122,7 +122,7 @@ export default function UsuariosPage() {
               ))}
               {!filtrados.length ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-gov-muted">
+                  <td colSpan={4} className="border border-slate-300 px-4 py-8 text-center text-gov-muted">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>

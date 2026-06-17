@@ -2,18 +2,14 @@ import { Download, Edit, FileSpreadsheet, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import BooleanBadge from "../components/BooleanBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
 import { exportRequerimentosExcel, exportRequerimentosPdf } from "../services/exporters";
+import { requerimentoReportColumns } from "../services/requerimentoColumns";
 import { POSTOS_GRADUACOES, type PostoGraduacao, type Requerimento } from "../types";
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR").format(new Date(`${value}T00:00:00`));
-}
 
 export default function RequerimentosPorPostoPage() {
   const params = useParams();
@@ -95,36 +91,34 @@ export default function RequerimentosPorPostoPage() {
       {loading ? (
         <LoadingState />
       ) : (
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white">
-          <table className="w-full min-w-[1080px] text-left text-sm">
+        <div className="overflow-x-auto rounded border border-slate-300 bg-white">
+          <table className="w-full min-w-[3600px] border-collapse text-center text-xs">
             <thead className="bg-slate-100 text-gov-muted">
               <tr>
-                <th className="px-3 py-3">Ordem</th>
-                <th className="px-3 py-3">Nº Processo SEI</th>
-                <th className="px-3 py-3">Data Recebimento OPM</th>
-                <th className="px-3 py-3">Matrícula</th>
-                <th className="px-3 py-3">Nome do Requerente</th>
-                <th className="px-3 py-3">Nº SEI Certidão</th>
-                <th className="px-3 py-3">Afastamentos</th>
-                <th className="px-3 py-3">Férias 5 Anos</th>
-                <th className="px-3 py-3">Prioridade</th>
-                <th className="px-3 py-3 text-right">Ações</th>
+                {requerimentoReportColumns.map((column) => (
+                  <th
+                    key={column.header}
+                    className="border border-slate-300 px-2 py-2 leading-tight"
+                  >
+                    {column.header}
+                  </th>
+                ))}
+                <th className="border border-slate-300 px-2 py-2">Ações</th>
               </tr>
             </thead>
             <tbody>
               {requerimentos.map((item, index) => (
                 <tr key={item.id} className={index % 2 ? "bg-slate-50" : "bg-white"}>
-                  <td className="px-3 py-3 font-semibold">{index + 1}</td>
-                  <td className="px-3 py-3">{item.num_processo_sei_requerimento}</td>
-                  <td className="px-3 py-3">{formatDate(item.data_recebimento_opm)}</td>
-                  <td className="px-3 py-3">{item.policial.matricula}</td>
-                  <td className="px-3 py-3">{item.policial.nome_completo}</td>
-                  <td className="px-3 py-3">{item.num_sei_certidao_opm}</td>
-                  <td className="px-3 py-3"><BooleanBadge value={item.tem_afastamentos} /></td>
-                  <td className="px-3 py-3"><BooleanBadge value={item.gozou_ferias_5_anos} /></td>
-                  <td className="px-3 py-3"><BooleanBadge value={item.tem_prioridade_legal} /></td>
-                  <td className="px-3 py-3">
-                    <div className="flex justify-end gap-2">
+                  {requerimentoReportColumns.map((column) => (
+                    <td
+                      key={column.header}
+                      className="border border-slate-300 px-2 py-2 align-middle"
+                    >
+                      {column.value(item, index)}
+                    </td>
+                  ))}
+                  <td className="border border-slate-300 px-2 py-2 align-middle">
+                    <div className="flex justify-center gap-2">
                       <Link
                         to={`/requerimentos/${item.id}/editar`}
                         className="focus-ring rounded p-2 text-gov-primary hover:bg-blue-50"
@@ -146,7 +140,10 @@ export default function RequerimentosPorPostoPage() {
               ))}
               {!requerimentos.length ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-gov-muted">
+                  <td
+                    colSpan={requerimentoReportColumns.length + 1}
+                    className="border border-slate-300 px-4 py-8 text-center text-gov-muted"
+                  >
                     Nenhum requerimento cadastrado para este posto.
                   </td>
                 </tr>

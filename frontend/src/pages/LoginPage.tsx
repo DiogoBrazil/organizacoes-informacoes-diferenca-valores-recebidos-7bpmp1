@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../services/api";
+import logo7Bpm from "../assets/images/logo-7bpm.png";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("admin@pmro.local");
@@ -31,14 +32,13 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gov-bg p-4">
       <section className="w-full max-w-md rounded border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded bg-gov-primary font-bold text-white">
-            PM
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gov-muted">PMRO</p>
-            <h1 className="text-xl font-bold">Gestão de Requerimentos</h1>
-          </div>
+        <div className="mb-6 flex flex-col items-center gap-3 text-center">
+          <img
+            src={logo7Bpm}
+            alt="Logo oficial do 7º BPMP1"
+            className="h-24 w-24 shrink-0 object-contain"
+          />
+          <h1 className="text-xl font-bold text-gov-text">7º BPMP1</h1>
         </div>
         {expired ? (
           <div className="mb-4 rounded border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-900">

@@ -1,8 +1,6 @@
 import { FileText, Shield, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import PageHeader from "../components/PageHeader";
-
 const cards = [
   {
     to: "/usuarios",
@@ -26,11 +24,6 @@ const cards = [
 
 export default function DashboardPage() {
   return (
-    <>
-      <PageHeader
-        title="Painel Inicial"
-        subtitle="Acesse os módulos administrativos do sistema."
-      />
       <div className="grid gap-4 md:grid-cols-3">
         {cards.map((card) => {
           const Icon = card.icon;
@@ -47,6 +40,5 @@ export default function DashboardPage() {
           );
         })}
       </div>
-    </>
   );
 }
