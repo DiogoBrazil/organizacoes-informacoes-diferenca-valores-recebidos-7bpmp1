@@ -11,6 +11,7 @@ import LoginPage from "./pages/LoginPage";
 import PolicialFormPage from "./pages/PolicialFormPage";
 import PoliciaisPage from "./pages/PoliciaisPage";
 import RequerimentoFormPage from "./pages/RequerimentoFormPage";
+import RequerimentoViewPage from "./pages/RequerimentoViewPage";
 import RequerimentosPage from "./pages/RequerimentosPage";
 import RequerimentosPorPostoPage from "./pages/RequerimentosPorPostoPage";
 import UsuarioFormPage from "./pages/UsuarioFormPage";
@@ -41,6 +42,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="policiais/:id/editar" element={<PolicialFormPage />} />
               <Route path="requerimentos" element={<RequerimentosPage />} />
               <Route path="requerimentos/novo" element={<RequerimentoFormPage />} />
+              <Route path="requerimentos/:id/visualizar" element={<RequerimentoViewPage />} />
               <Route path="requerimentos/:id/editar" element={<RequerimentoFormPage />} />
               <Route path="requerimentos/:posto" element={<RequerimentosPorPostoPage />} />
             </Route>

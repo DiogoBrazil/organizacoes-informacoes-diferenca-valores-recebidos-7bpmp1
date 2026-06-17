@@ -5,16 +5,20 @@ export interface RequerimentoReportColumn {
   value: (item: Requerimento, index: number) => string | number;
 }
 
-function formatDate(value: string) {
+export function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR").format(new Date(`${value}T00:00:00`));
 }
 
-function simNao(value: boolean) {
+export function simNao(value: boolean) {
   return value ? "SIM" : "NÃO";
 }
 
-function text(value: string | null | undefined) {
+export function text(value: string | null | undefined) {
   return value ?? "";
+}
+
+export function displayText(value: string | number | null | undefined) {
+  return value === null || value === undefined || value === "" ? "-" : String(value);
 }
 
 export const requerimentoReportColumns: RequerimentoReportColumn[] = [
