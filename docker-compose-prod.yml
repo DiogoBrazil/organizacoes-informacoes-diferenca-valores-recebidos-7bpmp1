@@ -60,8 +60,9 @@ services:
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:?defina ACME_EMAIL no .env}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # Desafio TLS-ALPN-01 (porta 443): não depende de caminho HTTP, então o
+      # redirect 80->443 abaixo não interfere na emissão do certificado.
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--log.level=INFO"
