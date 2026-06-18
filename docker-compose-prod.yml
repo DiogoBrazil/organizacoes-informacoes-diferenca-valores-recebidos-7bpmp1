@@ -65,9 +65,6 @@ services:
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:?defina ACME_EMAIL no .env}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      # CA de STAGING durante a validação (limites altos, certificado não-confiável).
-      # Após validar o fluxo, comente esta linha para usar a produção.
-      - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       # Desafio DNS-01 via Cloudflare: não usa portas de entrada (ideal para a
       # VPS atrás de NAT). O Traefik cria o TXT _acme-challenge pela API.
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
