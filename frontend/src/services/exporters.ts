@@ -49,25 +49,78 @@ async function imageUrlToDataUrl(url: string) {
   return readBlobAsDataUrl(await response.blob());
 }
 
-export function exportRequerimentosPdf(posto: PostoGraduacao, requerimentos: Requerimento[]) {
+export async function exportRequerimentosPdf(
+  posto: PostoGraduacao,
+  requerimentos: Requerimento[]
+) {
   const doc = new jsPDF({ orientation: "landscape", format: "a3" });
-  doc.setFontSize(13);
-  doc.text("POLÍCIA MILITAR DE RONDÔNIA — PMRO", 14, 16);
-  doc.setFontSize(10);
-  doc.text(`Lista de Requerimentos — ${posto}`, 14, 23);
-  doc.text(`Data de geração: ${new Intl.DateTimeFormat("pt-BR").format(new Date())}`, 14, 30);
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const centerX = pageWidth / 2;
+  const logoDataUrl = await imageUrlToDataUrl(logo7Bpm);
+  const generatedAt = new Intl.DateTimeFormat("pt-BR").format(new Date());
+
+  doc.addImage(logoDataUrl, "PNG", centerX - 11, 8, 22, 22);
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text("BATALHÃO CAPITÃO SILVIO - 7ºBPM", centerX, 38, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(
+    `Lista de Requerimentos de recálculo de valores recebidos — ${posto}`,
+    centerX,
+    45,
+    { align: "center" }
+  );
+
+  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(9);
+  doc.text(`Data de geração: ${generatedAt}`, centerX, 51, { align: "center" });
+
+  doc.setDrawColor(19, 81, 180);
+  doc.setLineWidth(0.6);
+  doc.line(14, 55, pageWidth - 14, 55);
 
   autoTable(doc, {
     head: [requerimentoReportColumns.map((column) => column.header)],
     body: requerimentoReportBody(requerimentos),
-    startY: 36,
+    startY: 60,
     margin: { left: 8, right: 8 },
-    styles: { fontSize: 4, cellPadding: 1, halign: "center", valign: "middle" },
-    columnStyles: {
-      3: { cellWidth: 34 },
-      7: { cellWidth: 24 },
+    theme: "grid",
+    styles: {
+      fontSize: 4,
+      cellPadding: 1,
+      halign: "center",
+      valign: "middle",
+      overflow: "linebreak",
+      lineColor: [148, 163, 184],
+      lineWidth: 0.1,
     },
-    headStyles: { fillColor: [19, 81, 180] },
+    headStyles: {
+      fillColor: [19, 81, 180],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      lineColor: [148, 163, 184],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: { fillColor: [241, 245, 249] },
+    columnStyles: {
+      0: { cellWidth: 10 },
+      1: { cellWidth: 26 },
+      4: { cellWidth: 38, halign: "left" },
+      6: { cellWidth: 28 },
+    },
+    didDrawPage: (data) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Página ${data.pageNumber}`, pageWidth - 14, pageHeight - 6, {
+        align: "right",
+      });
+    },
   });
 
   doc.save(`requerimentos_${postoForFile(posto)}_${todayForFile()}.pdf`);

@@ -92,7 +92,7 @@ export default function RequerimentosPorPostoPage() {
 
   async function handleExportPdf() {
     try {
-      exportRequerimentosPdf(posto, await carregarTodosFiltrados());
+      await exportRequerimentosPdf(posto, await carregarTodosFiltrados());
     } catch (error) {
       showToast(getErrorMessage(error), "error");
     }
