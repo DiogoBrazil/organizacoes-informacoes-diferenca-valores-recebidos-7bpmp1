@@ -30,14 +30,6 @@ services:
     networks:
       - internal
       - web
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=pmro_web"
-      - "traefik.http.routers.pmro-backend.rule=Host(`${DOMAIN:?defina DOMAIN no .env}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.pmro-backend.entrypoints=websecure"
-      - "traefik.http.routers.pmro-backend.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.pmro-backend.priority=100"
-      - "traefik.http.services.pmro-backend.loadbalancer.server.port=8000"
 
   frontend:
     build:
@@ -51,24 +43,19 @@ services:
       - backend
     networks:
       - web
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=pmro_web"
-      - "traefik.http.routers.pmro-frontend.rule=Host(`${DOMAIN:?defina DOMAIN no .env}`)"
-      - "traefik.http.routers.pmro-frontend.entrypoints=websecure"
-      - "traefik.http.routers.pmro-frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.pmro-frontend.priority=1"
-      - "traefik.http.services.pmro-frontend.loadbalancer.server.port=80"
 
   reverse-proxy:
-    # v3.3+ embute um cliente Docker que negocia a versão da API corretamente
-    # (a v3.0.4 trava em 1.24 e é rejeitada por daemons que exigem API >= 1.40).
     image: traefik:v3.3
     container_name: pmro_traefik
     restart: unless-stopped
+    environment:
+      # Usado pelo template do file provider (traefik/dynamic/routers.yml).
+      DOMAIN: ${DOMAIN:?defina DOMAIN no .env}
     command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
+      # File provider (sem acesso ao socket do Docker): evita o problema de
+      # negociação de versão da API do Docker em daemons recentes.
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:?defina ACME_EMAIL no .env}"
@@ -82,8 +69,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
     networks:
       - web
 
