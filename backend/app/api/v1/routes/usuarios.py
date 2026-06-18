@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentUser, DbSession
+from app.core.security import verify_password
 from app.crud import usuario as crud
 from app.schemas.usuario import UsuarioCreate, UsuarioPublic, UsuarioSenhaUpdate, UsuarioUpdate
 
@@ -64,12 +65,16 @@ def atualizar_usuario(
 
 @router.put("/{usuario_id}/senha", response_model=UsuarioPublic)
 def atualizar_senha(
-    usuario_id: UUID, data: UsuarioSenhaUpdate, db: DbSession, _: CurrentUser
+    usuario_id: UUID, data: UsuarioSenhaUpdate, db: DbSession, current_user: CurrentUser
 ) -> UsuarioPublic:
-    usuario = crud.get_usuario(db, usuario_id)
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
-    return crud.update_senha(db, usuario, data.senha)
+    if usuario_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você só pode alterar a sua própria senha.",
+        )
+    if not verify_password(data.senha_atual, current_user.senha_hash):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta.")
+    return crud.update_senha(db, current_user, data.senha)
 
 
 @router.delete("/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)

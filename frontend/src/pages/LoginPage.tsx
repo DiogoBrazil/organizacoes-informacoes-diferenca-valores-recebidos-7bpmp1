@@ -6,8 +6,8 @@ import { getErrorMessage } from "../services/api";
 import logo7Bpm from "../assets/images/logo-7bpm.png";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@pmro.local");
-  const [senha, setSenha] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();

@@ -1,5 +1,5 @@
 import { FileText, Home, LogOut, Shield, Users } from "lucide-react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import logo7Bpm from "../assets/images/logo-7bpm.png";
 import { useAuth } from "../context/AuthContext";
@@ -92,14 +92,18 @@ export default function AppLayout() {
             }
           >
             {usuario ? (
-              <div className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50 py-1 pl-1 pr-3">
+              <Link
+                to={`/usuarios/${usuario.id}/editar`}
+                title="Minha conta"
+                className="focus-ring flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50 py-1 pl-1 pr-3 transition-colors hover:border-slate-300 hover:bg-slate-100"
+              >
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gov-primary text-xs font-bold text-white">
                   {initials(usuario.nome_completo)}
                 </span>
                 <span className="hidden max-w-[14rem] truncate text-sm font-semibold text-gov-text sm:inline">
                   {usuario.nome_completo}
                 </span>
-              </div>
+              </Link>
             ) : null}
             <button type="button" onClick={handleLogout} className="btn btn-outline">
               <LogOut className="h-4 w-4" />
