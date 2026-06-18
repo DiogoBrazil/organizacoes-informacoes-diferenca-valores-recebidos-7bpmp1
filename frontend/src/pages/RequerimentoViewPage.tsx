@@ -124,6 +124,7 @@ export default function RequerimentoViewPage() {
             <DetailItem label="Afastamentos Registrados" value={<BooleanBadge value={requerimento.tem_afastamentos} />} />
             <DetailItem label="Gozou Todas Férias últimos 5 anos" value={<BooleanBadge value={requerimento.gozou_ferias_5_anos} />} />
             <DetailItem label="Prioridade" value={<BooleanBadge value={requerimento.tem_prioridade_legal} />} />
+            <DetailItem label="Enviado para CP" value={<BooleanBadge value={requerimento.enviado_para_cp} falseVariant="danger" />} />
           </dl>
         </DetailSection>
 

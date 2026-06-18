@@ -87,6 +87,15 @@ def update_requerimento(
     return get_requerimento(db, requerimento.id) or requerimento
 
 
+def set_enviado_para_cp(
+    db: Session, requerimento: Requerimento, valor: bool
+) -> Requerimento:
+    requerimento.enviado_para_cp = valor
+    db.commit()
+    db.refresh(requerimento)
+    return get_requerimento(db, requerimento.id) or requerimento
+
+
 def delete_requerimento(db: Session, requerimento: Requerimento) -> None:
     db.delete(requerimento)
     db.commit()

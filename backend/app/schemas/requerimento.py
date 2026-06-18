@@ -16,6 +16,7 @@ class RequerimentoBase(BaseModel):
     tem_afastamentos: bool = False
     gozou_ferias_5_anos: bool = False
     tem_prioridade_legal: bool = False
+    enviado_para_cp: bool = False
     abono_pecuniario_2021: str | None = None
     ferias_1_3_2021: str | None = None
     abono_pecuniario_2022: str | None = None
@@ -104,3 +105,7 @@ class RequerimentoPublic(RequerimentoBase):
     criado_em: datetime
     atualizado_em: datetime
     policial: PolicialPublic
+
+
+class RequerimentoEnviadoCp(BaseModel):
+    enviado_para_cp: bool

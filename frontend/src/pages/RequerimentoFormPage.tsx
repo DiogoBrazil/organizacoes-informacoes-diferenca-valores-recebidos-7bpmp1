@@ -27,6 +27,7 @@ const initialForm: RequerimentoPayload = {
   tem_afastamentos: false,
   gozou_ferias_5_anos: false,
   tem_prioridade_legal: false,
+  enviado_para_cp: false,
   abono_pecuniario_2021: "",
   ferias_1_3_2021: "",
   abono_pecuniario_2022: "",
@@ -119,6 +120,7 @@ export default function RequerimentoFormPage() {
             tem_afastamentos: requerimento.tem_afastamentos,
             gozou_ferias_5_anos: requerimento.gozou_ferias_5_anos,
             tem_prioridade_legal: requerimento.tem_prioridade_legal,
+            enviado_para_cp: requerimento.enviado_para_cp,
             abono_pecuniario_2021: requerimento.abono_pecuniario_2021 ?? "",
             ferias_1_3_2021: requerimento.ferias_1_3_2021 ?? "",
             abono_pecuniario_2022: requerimento.abono_pecuniario_2022 ?? "",
@@ -305,6 +307,7 @@ export default function RequerimentoFormPage() {
               ["tem_afastamentos", "Tem afastamentos?"],
               ["gozou_ferias_5_anos", "Gozou férias nos últimos 5 anos?"],
               ["tem_prioridade_legal", "Tem prioridade legal?"],
+              ["enviado_para_cp", "Enviado para CP?"],
             ].map(([key, label]) => (
               <label key={key} className="block">
                 <span className="text-sm font-semibold">{label}</span>

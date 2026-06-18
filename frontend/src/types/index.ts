@@ -46,6 +46,7 @@ export interface Requerimento {
   tem_afastamentos: boolean;
   gozou_ferias_5_anos: boolean;
   tem_prioridade_legal: boolean;
+  enviado_para_cp: boolean;
   abono_pecuniario_2021?: string | null;
   ferias_1_3_2021?: string | null;
   abono_pecuniario_2022?: string | null;

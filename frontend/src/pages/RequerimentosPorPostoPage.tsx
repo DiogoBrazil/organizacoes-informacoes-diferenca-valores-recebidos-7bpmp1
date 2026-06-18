@@ -1,7 +1,8 @@
-import { Download, Edit, Eye, FileSpreadsheet, Plus, Search, Trash2 } from "lucide-react";
+import { Download, Edit, Eye, FileSpreadsheet, Plus, Search, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import BooleanBadge from "../components/BooleanBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
@@ -90,6 +91,22 @@ export default function RequerimentosPorPostoPage() {
     }
   }
 
+  async function toggleEnviadoCp(item: Requerimento) {
+    try {
+      const { data } = await api.patch<Requerimento>(`/requerimentos/${item.id}/enviado-cp`, {
+        enviado_para_cp: !item.enviado_para_cp,
+      });
+      setRequerimentos((cur) => cur.map((r) => (r.id === data.id ? data : r)));
+      showToast(
+        data.enviado_para_cp
+          ? "Requerimento marcado como enviado para CP."
+          : "Requerimento marcado como não enviado para CP."
+      );
+    } catch (error) {
+      showToast(getErrorMessage(error), "error");
+    }
+  }
+
   async function handleExportPdf() {
     try {
       await exportRequerimentosPdf(posto, await carregarTodosFiltrados());
@@ -167,6 +184,7 @@ export default function RequerimentosPorPostoPage() {
                 <th className="border border-slate-300 px-3 py-3">Data/Hora de Recebimento</th>
                 <th className="border border-slate-300 px-3 py-3">Nome</th>
                 <th className="border border-slate-300 px-3 py-3">RE</th>
+                <th className="border border-slate-300 px-3 py-3">Enviado para CP</th>
                 <th className="border border-slate-300 px-3 py-3">Ações</th>
               </tr>
             </thead>
@@ -182,8 +200,25 @@ export default function RequerimentosPorPostoPage() {
                   </td>
                   <td className="border border-slate-300 px-3 py-3">{item.policial.nome_completo}</td>
                   <td className="border border-slate-300 px-3 py-3">{item.policial.matricula}</td>
+                  <td className="border border-slate-300 px-3 py-3">
+                    <BooleanBadge value={item.enviado_para_cp} falseVariant="danger" />
+                  </td>
                   <td className="border border-slate-300 px-3 py-3 align-middle">
                     <div className="flex justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleEnviadoCp(item)}
+                        className={`focus-ring rounded p-2 hover:bg-green-50 ${
+                          item.enviado_para_cp ? "text-green-600" : "text-gov-muted"
+                        }`}
+                        title={
+                          item.enviado_para_cp
+                            ? "Marcar como não enviado para CP"
+                            : "Marcar como enviado para CP"
+                        }
+                      >
+                        <Send className="h-4 w-4" />
+                      </button>
                       <Link
                         to={`/requerimentos/${item.id}/visualizar`}
                         className="focus-ring rounded p-2 text-gov-primary hover:bg-blue-50"
@@ -213,7 +248,7 @@ export default function RequerimentosPorPostoPage() {
               {!requerimentos.length ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="border border-slate-300 px-4 py-8 text-center text-gov-muted"
                   >
                     Nenhum requerimento cadastrado para este posto.

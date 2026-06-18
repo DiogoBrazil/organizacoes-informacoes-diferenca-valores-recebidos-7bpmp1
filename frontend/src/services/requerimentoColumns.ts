@@ -63,6 +63,7 @@ export const requerimentoReportColumns: RequerimentoReportColumn[] = [
   { header: "Auxilio Saúde 2024", value: (item) => currencyWithSymbol(item.auxilio_saude_2024) },
   { header: "Auxilio Saúde 2025", value: (item) => currencyWithSymbol(item.auxilio_saude_2025) },
   { header: "Auxilio Saúde 2026", value: (item) => currencyWithSymbol(item.auxilio_saude_2026) },
+  { header: "Enviado para CP", value: (item) => simNao(item.enviado_para_cp) },
 ];
 
 export function requerimentoReportRows(requerimentos: Requerimento[]) {

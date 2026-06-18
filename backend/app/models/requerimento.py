@@ -24,6 +24,7 @@ class Requerimento(Base):
     tem_afastamentos: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     gozou_ferias_5_anos: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     tem_prioridade_legal: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    enviado_para_cp: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     abono_pecuniario_2021: Mapped[str | None] = mapped_column(String(20))
     ferias_1_3_2021: Mapped[str | None] = mapped_column(String(20))
