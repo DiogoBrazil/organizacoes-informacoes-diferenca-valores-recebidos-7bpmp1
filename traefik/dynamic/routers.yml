@@ -1,23 +1,20 @@
 http:
-  middlewares:
-    https-redirect:
-      redirectScheme:
-        scheme: https
-        permanent: true
-
   routers:
-    # Redirect HTTP -> HTTPS (porta 80). O handler do desafio ACME
-    # (/.well-known/acme-challenge/) tem prioridade sobre este router.
-    http-catchall:
+    pmro-backend-http:
+      rule: 'Host(`__DOMAIN__`) && PathPrefix(`/api`)'
+      entryPoints:
+        - web
+      service: pmro-backend
+      priority: 100
+
+    pmro-frontend-http:
       rule: 'Host(`__DOMAIN__`)'
       entryPoints:
         - web
-      middlewares:
-        - https-redirect
       service: pmro-frontend
+      priority: 1
 
-    # API (FastAPI) — prioridade maior para capturar /api antes do catch-all.
-    pmro-backend:
+    pmro-backend-https:
       rule: 'Host(`__DOMAIN__`) && PathPrefix(`/api`)'
       entryPoints:
         - websecure
@@ -26,8 +23,7 @@ http:
       tls:
         certResolver: letsencrypt
 
-    # Frontend (nginx) — catch-all do domínio.
-    pmro-frontend:
+    pmro-frontend-https:
       rule: 'Host(`__DOMAIN__`)'
       entryPoints:
         - websecure
