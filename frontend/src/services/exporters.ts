@@ -52,7 +52,7 @@ async function imageUrlToDataUrl(url: string) {
 export function exportRequerimentosPdf(posto: PostoGraduacao, requerimentos: Requerimento[]) {
   const doc = new jsPDF({ orientation: "landscape", format: "a3" });
   doc.setFontSize(13);
-  doc.text("POLÍCIA MILITAR DO ESTADO DE RONDÔNIA — PMRO", 14, 16);
+  doc.text("POLÍCIA MILITAR DE RONDÔNIA — PMRO", 14, 16);
   doc.setFontSize(10);
   doc.text(`Lista de Requerimentos — ${posto}`, 14, 23);
   doc.text(`Data de geração: ${new Intl.DateTimeFormat("pt-BR").format(new Date())}`, 14, 30);
