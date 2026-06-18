@@ -16,7 +16,7 @@
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "latest",
-    "xlsx": "latest"
+    "xlsx-js-style": "^1.2.0"
   },
   "devDependencies": {
     "@types/react": "latest",

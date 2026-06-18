@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 
 import logo7Bpm from "../assets/images/logo-7bpm.png";
 import type { PostoGraduacao, Requerimento } from "../types";
@@ -11,9 +11,14 @@ import {
   formatTime,
   requerimentoReportBody,
   requerimentoReportColumns,
-  requerimentoReportRows,
   simNao,
 } from "./requerimentoColumns";
+
+type ExcelCell = XLSX.CellObject & { s?: XLSX.CellStyle };
+type ExcelWorksheet = XLSX.WorkSheet & {
+  "!cols"?: Array<{ wch: number }>;
+  "!freeze"?: { xSplit?: number; ySplit?: number; topLeftCell?: string; activePane?: string };
+};
 
 function todayForFile() {
   return new Date().toISOString().slice(0, 10);
@@ -21,6 +26,10 @@ function todayForFile() {
 
 function safeFileName(value: string) {
   return value.replace(/[^\w.-]+/g, "_");
+}
+
+function postoForFile(value: PostoGraduacao) {
+  return value.replace(/\s+/g, "_");
 }
 
 function readBlobAsDataUrl(blob: Blob) {
@@ -61,7 +70,7 @@ export function exportRequerimentosPdf(posto: PostoGraduacao, requerimentos: Req
     headStyles: { fillColor: [19, 81, 180] },
   });
 
-  doc.save(`requerimentos_${posto.replace(/\s+/g, "_")}_${todayForFile()}.pdf`);
+  doc.save(`requerimentos_${postoForFile(posto)}_${todayForFile()}.pdf`);
 }
 
 function addPdfSection(
@@ -218,11 +227,173 @@ export async function exportRequerimentoIndividualPdf(requerimento: Requerimento
   doc.save(`requerimento_${safeFileName(requerimento.num_processo_sei_requerimento)}.pdf`);
 }
 
+const thinBorder: NonNullable<XLSX.CellStyle["border"]> = {
+  top: { style: "thin", color: { rgb: "CBD5E1" } },
+  right: { style: "thin", color: { rgb: "CBD5E1" } },
+  bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+  left: { style: "thin", color: { rgb: "CBD5E1" } },
+};
+
+const titleStyle: XLSX.CellStyle = {
+  font: { bold: true, sz: 14, color: { rgb: "0F172A" } },
+  alignment: { horizontal: "center", vertical: "center" },
+};
+
+const subtitleStyle: XLSX.CellStyle = {
+  font: { bold: true, sz: 11, color: { rgb: "475569" } },
+  alignment: { horizontal: "center", vertical: "center" },
+};
+
+const infoStyle: XLSX.CellStyle = {
+  font: { sz: 10, color: { rgb: "475569" } },
+  alignment: { horizontal: "center", vertical: "center" },
+};
+
+const headerStyle: XLSX.CellStyle = {
+  font: { bold: true, color: { rgb: "FFFFFF" } },
+  fill: { fgColor: { rgb: "1351B4" } },
+  alignment: { horizontal: "center", vertical: "center", wrapText: true },
+  border: thinBorder,
+};
+
+const bodyStyle: XLSX.CellStyle = {
+  alignment: { horizontal: "center", vertical: "center", wrapText: true },
+  border: thinBorder,
+};
+
+const textBodyStyle: XLSX.CellStyle = {
+  alignment: { horizontal: "left", vertical: "center", wrapText: true },
+  border: thinBorder,
+};
+
+const zebraStyle: XLSX.CellStyle = {
+  ...bodyStyle,
+  fill: { fgColor: { rgb: "F8FAFC" } },
+};
+
+const zebraTextStyle: XLSX.CellStyle = {
+  ...textBodyStyle,
+  fill: { fgColor: { rgb: "F8FAFC" } },
+};
+
+const columnWidths = [
+  8,
+  22,
+  18,
+  12,
+  36,
+  12,
+  18,
+  22,
+  32,
+  14,
+  22,
+  16,
+  22,
+  16,
+  22,
+  16,
+  22,
+  16,
+  22,
+  16,
+  18,
+  18,
+  18,
+  18,
+  18,
+  18,
+];
+
+function setCellStyle(worksheet: ExcelWorksheet, address: string, style: XLSX.CellStyle) {
+  const cell = worksheet[address] as ExcelCell | undefined;
+  if (cell) {
+    cell.s = style;
+  }
+}
+
+function styleRange(
+  worksheet: ExcelWorksheet,
+  range: XLSX.Range,
+  styleForCell: (row: number, column: number) => XLSX.CellStyle
+) {
+  for (let row = range.s.r; row <= range.e.r; row += 1) {
+    for (let column = range.s.c; column <= range.e.c; column += 1) {
+      setCellStyle(worksheet, XLSX.utils.encode_cell({ r: row, c: column }), styleForCell(row, column));
+    }
+  }
+}
+
 export function exportRequerimentosExcel(posto: PostoGraduacao, requerimentos: Requerimento[]) {
-  const worksheet = XLSX.utils.json_to_sheet(requerimentoReportRows(requerimentos), {
-    header: requerimentoReportColumns.map((column) => column.header),
-  });
+  const headers = requerimentoReportColumns.map((column) => column.header);
+  const generatedAt = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date());
+  const dataRows = requerimentos.map((item, index) =>
+    requerimentoReportColumns.map((column) => column.value(item, index))
+  );
+  const sheetRows = [
+    ["POLÍCIA MILITAR DO ESTADO DE RONDÔNIA - PMRO"],
+    ["7º BPMP1 - Gestão de requerimentos sobre recálculo de valores recebidos"],
+    [`Lista de Requerimentos - ${posto}`],
+    [`Gerado em: ${generatedAt}`],
+    [],
+    headers,
+    ...dataRows,
+  ];
+  const worksheet = XLSX.utils.aoa_to_sheet(sheetRows) as ExcelWorksheet;
+  const lastColumn = headers.length - 1;
+  const headerRow = 5;
+  const firstDataRow = headerRow + 1;
+  const lastDataRow = firstDataRow + dataRows.length - 1;
+
+  worksheet["!merges"] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: lastColumn } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: lastColumn } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: lastColumn } },
+    { s: { r: 3, c: 0 }, e: { r: 3, c: lastColumn } },
+  ];
+  worksheet["!cols"] = columnWidths.map((wch) => ({ wch }));
+  worksheet["!rows"] = [
+    { hpt: 24 },
+    { hpt: 20 },
+    { hpt: 20 },
+    { hpt: 18 },
+    { hpt: 8 },
+    { hpt: 36 },
+  ];
+  worksheet["!autofilter"] = {
+    ref: XLSX.utils.encode_range({
+      s: { r: headerRow, c: 0 },
+      e: { r: Math.max(headerRow, lastDataRow), c: lastColumn },
+    }),
+  };
+  worksheet["!freeze"] = { xSplit: 0, ySplit: headerRow + 1, topLeftCell: "A7", activePane: "bottomLeft" };
+
+  setCellStyle(worksheet, "A1", titleStyle);
+  setCellStyle(worksheet, "A2", subtitleStyle);
+  setCellStyle(worksheet, "A3", subtitleStyle);
+  setCellStyle(worksheet, "A4", infoStyle);
+  styleRange(
+    worksheet,
+    { s: { r: headerRow, c: 0 }, e: { r: headerRow, c: lastColumn } },
+    () => headerStyle
+  );
+  if (dataRows.length) {
+    styleRange(
+      worksheet,
+      { s: { r: firstDataRow, c: 0 }, e: { r: lastDataRow, c: lastColumn } },
+      (row, column) => {
+        const textColumn = column === 1 || column === 4 || column === 6 || column === 8;
+        const zebra = row % 2 === 0;
+        if (textColumn) return zebra ? zebraTextStyle : textBodyStyle;
+        return zebra ? zebraStyle : bodyStyle;
+      }
+    );
+  }
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Requerimentos");
-  XLSX.writeFile(workbook, `requerimentos_${posto.replace(/\s+/g, "_")}_${todayForFile()}.xlsx`);
+  XLSX.writeFile(workbook, `requerimentos_${postoForFile(posto)}_${todayForFile()}.xlsx`);
 }
