@@ -1,0 +1,32 @@
+http:
+  routers:
+    # API (FastAPI) — prioridade maior para capturar /api antes do catch-all.
+    pmro-backend:
+      rule: 'Host(`{{ env "DOMAIN" }}`) && PathPrefix(`/api`)'
+      entryPoints:
+        - websecure
+      service: pmro-backend
+      priority: 100
+      tls:
+        certResolver: letsencrypt
+
+    # Frontend (nginx) — catch-all do domínio.
+    pmro-frontend:
+      rule: 'Host(`{{ env "DOMAIN" }}`)'
+      entryPoints:
+        - websecure
+      service: pmro-frontend
+      priority: 1
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    pmro-backend:
+      loadBalancer:
+        servers:
+          - url: "http://backend:8000"
+
+    pmro-frontend:
+      loadBalancer:
+        servers:
+          - url: "http://frontend:80"
