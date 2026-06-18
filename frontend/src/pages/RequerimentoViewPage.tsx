@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit } from "lucide-react";
+import { ArrowLeft, Download, Edit } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -7,6 +7,7 @@ import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
+import { exportRequerimentoIndividualPdf } from "../services/exporters";
 import { currencyWithSymbol, displayText, formatDate, formatTime } from "../services/requerimentoColumns";
 import type { Requerimento } from "../types";
 
@@ -35,6 +36,7 @@ export default function RequerimentoViewPage() {
   const { id } = useParams();
   const [requerimento, setRequerimento] = useState<Requerimento | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -59,6 +61,18 @@ export default function RequerimentoViewPage() {
 
   const voltarPara = `/requerimentos/${encodeURIComponent(requerimento.policial.posto_graduacao)}`;
 
+  async function handleGerarPdf() {
+    if (!requerimento) return;
+    setGeneratingPdf(true);
+    try {
+      await exportRequerimentoIndividualPdf(requerimento);
+    } catch (error) {
+      showToast(getErrorMessage(error), "error");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  }
+
   return (
     <>
       <div className="mb-5 flex flex-wrap justify-end gap-2">
@@ -76,6 +90,15 @@ export default function RequerimentoViewPage() {
           <Edit className="h-4 w-4" />
           Editar
         </Link>
+        <button
+          type="button"
+          onClick={handleGerarPdf}
+          disabled={generatingPdf}
+          className="focus-ring inline-flex items-center gap-2 rounded bg-gov-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gov-secondary disabled:opacity-70"
+        >
+          <Download className="h-4 w-4" />
+          {generatingPdf ? "Gerando..." : "Gerar PDF"}
+        </button>
       </div>
 
       <div className="space-y-5">
