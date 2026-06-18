@@ -61,13 +61,11 @@ services:
       - "traefik.http.services.pmro-frontend.loadbalancer.server.port=80"
 
   reverse-proxy:
-    image: traefik:v3.0
+    # v3.3+ embute um cliente Docker que negocia a versão da API corretamente
+    # (a v3.0.4 trava em 1.24 e é rejeitada por daemons que exigem API >= 1.40).
+    image: traefik:v3.3
     container_name: pmro_traefik
     restart: unless-stopped
-    environment:
-      # Fixa a versão da API do Docker (o daemon da VPS exige API >= 1.40 e o
-      # cliente embutido no Traefik cairia no default antigo 1.24 sem isso).
-      DOCKER_API_VERSION: "1.44"
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
