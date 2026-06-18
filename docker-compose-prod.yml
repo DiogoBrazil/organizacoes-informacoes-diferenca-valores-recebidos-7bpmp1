@@ -49,14 +49,17 @@ services:
     container_name: pmro_traefik
     restart: unless-stopped
     environment:
-      # Usado pelo template do file provider (traefik/dynamic/routers.yml).
+      # Usado para renderizar o template do file provider no start do Traefik.
       DOMAIN: ${DOMAIN:?defina DOMAIN no .env}
       # Token Cloudflare do desafio DNS-01 (permissões Zone:DNS:Edit + Zone:Read).
       CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:?defina CF_DNS_API_TOKEN no .env}
+    entrypoint:
+      - /bin/sh
+      - /usr/local/bin/render-and-run.sh
     command:
       # File provider (sem acesso ao socket do Docker): evita o problema de
       # negociação de versão da API do Docker em daemons recentes.
-      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.directory=/tmp/traefik-dynamic"
       - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
@@ -76,7 +79,8 @@ services:
       - "443:443"
     volumes:
       - ./letsencrypt:/letsencrypt
-      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./traefik/dynamic:/etc/traefik/templates:ro
+      - ./traefik/render-and-run.sh:/usr/local/bin/render-and-run.sh:ro
     networks:
       - web
 

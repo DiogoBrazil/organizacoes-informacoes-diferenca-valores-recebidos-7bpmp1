@@ -96,6 +96,8 @@ com `VITE_API_BASE_URL=/api/v1` (caminho relativo) no `frontend/Dockerfile.prod`
 - O banco **não** expõe a porta `5432` publicamente (fica apenas na rede interna).
 - As migrações Alembic e a criação do admin inicial rodam automaticamente no
   start do backend.
+- O Traefik renderiza `traefik/dynamic/routers.yml` no start usando `DOMAIN`
+  do `.env`; após trocar o domínio, recrie o `reverse-proxy`.
 - `letsencrypt/acme.json` e o `.env` de produção **não** são versionados
   (já constam no `.gitignore`).
 - Atualizações: `git pull` e novamente
