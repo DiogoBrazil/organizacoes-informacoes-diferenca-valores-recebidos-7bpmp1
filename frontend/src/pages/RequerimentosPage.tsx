@@ -31,7 +31,9 @@ export default function RequerimentosPage() {
     <>
       <PageHeader
         title="Requerimentos"
+        eyebrow="Por posto / graduação"
         subtitle="Selecione o posto ou graduação para consultar os processos recebidos."
+        icon={FileText}
       />
       {loading ? (
         <LoadingState />
@@ -41,15 +43,21 @@ export default function RequerimentosPage() {
             <Link
               key={posto}
               to={`/requerimentos/${encodeURIComponent(posto)}`}
-              className="focus-ring rounded border border-slate-200 bg-white p-4 shadow-sm transition hover:border-gov-secondary hover:shadow-md"
+              className="focus-ring group surface-card relative overflow-hidden p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-gov-secondary/50 hover:shadow-header"
             >
+              <span
+                aria-hidden
+                className="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gradient-to-r from-gov-secondary to-gov-primary transition-transform duration-200 group-hover:scale-x-100"
+              />
               <div className="flex items-center justify-between gap-3">
-                <FileText className="h-7 w-7 text-gov-primary" />
-                <span className="rounded bg-blue-50 px-2 py-1 text-sm font-bold text-gov-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gov-primary/10 text-gov-primary ring-1 ring-inset ring-gov-primary/15">
+                  <FileText className="h-5 w-5" />
+                </span>
+                <span className="rounded-full bg-gov-primary px-2.5 py-1 text-sm font-bold tabular-nums text-white">
                   {contadores[posto] ?? 0}
                 </span>
               </div>
-              <h3 className="mt-4 text-lg font-bold">{posto}</h3>
+              <h3 className="mt-4 font-display text-lg font-bold tracking-tight text-gov-text">{posto}</h3>
               <p className="mt-1 text-sm text-gov-muted">Requerimentos cadastrados</p>
             </Link>
           ))}

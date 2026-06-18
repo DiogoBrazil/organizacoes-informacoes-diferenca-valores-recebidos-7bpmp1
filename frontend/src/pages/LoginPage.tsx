@@ -30,16 +30,32 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gov-bg p-4">
-      <section className="w-full max-w-md rounded border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <img
-            src={logo7Bpm}
-            alt="Logo oficial do 7º BPMP1"
-            className="h-24 w-24 shrink-0 object-contain"
-          />
-          <h1 className="text-xl font-bold text-gov-text">7º BPMP1</h1>
-        </div>
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gov-ink p-4">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-90"
+        style={{
+          background:
+            "radial-gradient(900px 500px at 12% -10%, rgba(38,112,232,0.45), transparent 60%), radial-gradient(800px 520px at 100% 110%, rgba(19,81,180,0.5), transparent 55%)",
+        }}
+      />
+      <section className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl">
+        <div aria-hidden className="h-1.5 w-full bg-gradient-to-r from-gov-secondary via-gov-primary to-gov-ink" />
+        <div className="p-7 sm:p-8">
+          <div className="mb-6 flex flex-col items-center gap-3 text-center">
+            <img
+              src={logo7Bpm}
+              alt="Logo oficial do 7º BPMP1"
+              className="h-24 w-24 shrink-0 object-contain drop-shadow-sm"
+            />
+            <div>
+              <p className="text-[0.7rem] font-bold uppercase tracking-[0.18em] text-gov-primary/80">
+                Polícia Militar de Rondônia
+              </p>
+              <h1 className="font-display text-2xl font-bold tracking-tight text-gov-text">7º BPMP1</h1>
+              <p className="mt-1 text-sm text-gov-muted">Gestão de requerimentos de recálculo</p>
+            </div>
+          </div>
         {expired ? (
           <div className="mb-4 rounded border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-900">
             Sua sessão expirou. Entre novamente para continuar.
@@ -71,14 +87,11 @@ export default function LoginPage() {
               className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
             />
           </label>
-          <button
-            type="submit"
-            disabled={loading}
-            className="focus-ring w-full rounded bg-gov-primary px-4 py-2 font-semibold text-white hover:bg-gov-secondary disabled:opacity-70"
-          >
+          <button type="submit" disabled={loading} className="btn btn-primary w-full py-2.5">
             {loading ? "Entrando..." : "Entrar"}
           </button>
-        </form>
+          </form>
+        </div>
       </section>
     </main>
   );

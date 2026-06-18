@@ -1,4 +1,4 @@
-import { Download, Edit, Eye, FileSpreadsheet, Plus, Search, Send, Trash2 } from "lucide-react";
+import { Download, Edit, Eye, FileSpreadsheet, FileText, Plus, Search, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -131,29 +131,20 @@ export default function RequerimentosPorPostoPage() {
     <>
       <PageHeader
         title={posto}
+        eyebrow="Requerimentos por posto/graduação"
         subtitle="Lista de processos de requerimento recebidos pela OPM."
+        icon={FileText}
         actions={
           <>
-            <button
-              type="button"
-              onClick={handleExportPdf}
-              className="focus-ring inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
-            >
+            <button type="button" onClick={handleExportPdf} className="btn btn-danger">
               <Download className="h-4 w-4" />
               Exportar PDF
             </button>
-            <button
-              type="button"
-              onClick={handleExportExcel}
-              className="focus-ring inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
-            >
+            <button type="button" onClick={handleExportExcel} className="btn btn-success">
               <FileSpreadsheet className="h-4 w-4" />
               Exportar Excel
             </button>
-            <Link
-              to="/requerimentos/novo"
-              className="focus-ring inline-flex items-center gap-2 rounded bg-gov-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gov-secondary"
-            >
+            <Link to="/requerimentos/novo" className="btn btn-primary">
               <Plus className="h-4 w-4" />
               Adicionar Requerimento
             </Link>

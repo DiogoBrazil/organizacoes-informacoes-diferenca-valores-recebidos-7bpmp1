@@ -1,4 +1,4 @@
-import { Edit, Plus, Search, Trash2 } from "lucide-react";
+import { Edit, Plus, Search, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -57,12 +57,11 @@ export default function UsuariosPage() {
     <>
       <PageHeader
         title="Usuários"
+        eyebrow="Administração"
         subtitle="Gerencie os operadores autenticados do sistema."
+        icon={Users}
         actions={
-          <Link
-            to="/usuarios/novo"
-            className="focus-ring inline-flex items-center gap-2 rounded bg-gov-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gov-secondary"
-          >
+          <Link to="/usuarios/novo" className="btn btn-primary">
             <Plus className="h-4 w-4" />
             Adicionar Usuário
           </Link>

@@ -76,17 +76,11 @@ export default function RequerimentoViewPage() {
   return (
     <>
       <div className="mb-5 flex flex-wrap justify-end gap-2">
-        <Link
-          to={voltarPara}
-          className="focus-ring inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
-        >
+        <Link to={voltarPara} className="btn btn-outline">
           <ArrowLeft className="h-4 w-4" />
           Voltar
         </Link>
-        <Link
-          to={`/requerimentos/${requerimento.id}/editar`}
-          className="focus-ring inline-flex items-center gap-2 rounded bg-gov-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gov-secondary"
-        >
+        <Link to={`/requerimentos/${requerimento.id}/editar`} className="btn btn-primary">
           <Edit className="h-4 w-4" />
           Editar
         </Link>
@@ -94,7 +88,7 @@ export default function RequerimentoViewPage() {
           type="button"
           onClick={handleGerarPdf}
           disabled={generatingPdf}
-          className="focus-ring inline-flex items-center gap-2 rounded bg-gov-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gov-secondary disabled:opacity-70"
+          className="btn btn-danger"
         >
           <Download className="h-4 w-4" />
           {generatingPdf ? "Gerando..." : "Gerar PDF"}

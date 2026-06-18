@@ -1,3 +1,4 @@
+import { FileText } from "lucide-react";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -193,9 +194,11 @@ export default function RequerimentoFormPage() {
     <>
       <PageHeader
         title={editando ? "Editar Requerimento" : "Adicionar Requerimento"}
+        eyebrow={editando ? "Requerimento · edição" : "Requerimento · novo cadastro"}
         subtitle="Registre as informações conferidas pela OPM."
+        icon={FileText}
       />
-      <form onSubmit={handleSubmit} className="space-y-6 rounded border border-slate-200 bg-white p-5 shadow-sm">
+      <form onSubmit={handleSubmit} className="surface-card space-y-6 p-5 sm:p-6">
         <FieldSection title="Identificação do Processo">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <label className="block">

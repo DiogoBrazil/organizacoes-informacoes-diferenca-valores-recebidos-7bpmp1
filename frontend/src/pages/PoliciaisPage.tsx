@@ -1,4 +1,4 @@
-import { Edit, Plus, Search, Trash2 } from "lucide-react";
+import { Edit, Plus, Search, Shield, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -63,12 +63,11 @@ export default function PoliciaisPage() {
     <>
       <PageHeader
         title="Policiais Militares"
+        eyebrow="Efetivo"
         subtitle="Cadastre e mantenha os dados funcionais dos requerentes."
+        icon={Shield}
         actions={
-          <Link
-            to="/policiais/novo"
-            className="focus-ring inline-flex items-center gap-2 rounded bg-gov-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gov-secondary"
-          >
+          <Link to="/policiais/novo" className="btn btn-primary">
             <Plus className="h-4 w-4" />
             Adicionar Policial
           </Link>

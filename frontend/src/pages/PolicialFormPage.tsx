@@ -1,3 +1,4 @@
+import { Shield } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -74,9 +75,11 @@ export default function PolicialFormPage() {
     <>
       <PageHeader
         title={editando ? "Editar Policial Militar" : "Adicionar Policial Militar"}
+        eyebrow={editando ? "Efetivo · edição" : "Efetivo · novo cadastro"}
         subtitle="Informe posto, matrícula e nome completo do requerente."
+        icon={Shield}
       />
-      <form onSubmit={handleSubmit} className="rounded border border-slate-200 bg-white p-5 shadow-sm">
+      <form onSubmit={handleSubmit} className="surface-card p-5 sm:p-6">
         <div className="grid gap-4 md:grid-cols-3">
           <label className="block">
             <span className="text-sm font-semibold">Posto/Graduação</span>
