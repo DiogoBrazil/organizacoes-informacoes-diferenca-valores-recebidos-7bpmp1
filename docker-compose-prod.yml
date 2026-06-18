@@ -51,6 +51,8 @@ services:
     environment:
       # Usado pelo template do file provider (traefik/dynamic/routers.yml).
       DOMAIN: ${DOMAIN:?defina DOMAIN no .env}
+      # Token Cloudflare do desafio DNS-01 (permissões Zone:DNS:Edit + Zone:Read).
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:?defina CF_DNS_API_TOKEN no .env}
     command:
       # File provider (sem acesso ao socket do Docker): evita o problema de
       # negociação de versão da API do Docker em daemons recentes.
@@ -63,9 +65,11 @@ services:
       # CA de STAGING durante a validação (limites altos, certificado não-confiável).
       # Após validar o fluxo, comente esta linha para usar a produção.
       - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
-      # Desafio TLS-ALPN-01 (porta 443): a VPS está atrás de NAT e só a :443 é
-      # encaminhada do hipervisor; a :80 não chega, então HTTP-01 não funciona.
-      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      # Desafio DNS-01 via Cloudflare: não usa portas de entrada (ideal para a
+      # VPS atrás de NAT). O Traefik cria o TXT _acme-challenge pela API.
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
       - "--log.level=INFO"
     ports:
       - "80:80"
