@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "../context/LoaderContext";
 import { getErrorMessage } from "../services/api";
 import logo7Bpm from "../assets/images/logo-7bpm.png";
 
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { withLoader } = useLoader();
   const navigate = useNavigate();
   const location = useLocation();
   const expired = new URLSearchParams(location.search).get("expired");
@@ -20,7 +22,7 @@ export default function LoginPage() {
     setErro("");
     setLoading(true);
     try {
-      await login(email, senha);
+      await withLoader(() => login(email, senha), "Entrando...");
       navigate("/", { replace: true });
     } catch (error) {
       setErro(getErrorMessage(error));

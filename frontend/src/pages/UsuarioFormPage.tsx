@@ -6,6 +6,7 @@ import FormActions from "../components/FormActions";
 import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "../context/LoaderContext";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
 import type { Usuario } from "../types";
@@ -15,6 +16,7 @@ export default function UsuarioFormPage() {
   const editando = Boolean(id);
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { withLoader } = useLoader();
   const { usuario: usuarioLogado } = useAuth();
   const ehProprioUsuario = editando && usuarioLogado?.id === id;
   const [loading, setLoading] = useState(editando);
@@ -58,24 +60,26 @@ export default function UsuarioFormPage() {
     }
     setSaving(true);
     try {
-      if (editando) {
-        await api.put(`/usuarios/${id}`, {
-          nome_completo: form.nome_completo,
-          email: form.email,
-        });
-        if (ehProprioUsuario && form.senha) {
-          await api.put(`/usuarios/${id}/senha`, {
-            senha_atual: form.senha_atual,
+      await withLoader(async () => {
+        if (editando) {
+          await api.put(`/usuarios/${id}`, {
+            nome_completo: form.nome_completo,
+            email: form.email,
+          });
+          if (ehProprioUsuario && form.senha) {
+            await api.put(`/usuarios/${id}/senha`, {
+              senha_atual: form.senha_atual,
+              senha: form.senha,
+            });
+          }
+        } else {
+          await api.post("/usuarios", {
+            nome_completo: form.nome_completo,
+            email: form.email,
             senha: form.senha,
           });
         }
-      } else {
-        await api.post("/usuarios", {
-          nome_completo: form.nome_completo,
-          email: form.email,
-          senha: form.senha,
-        });
-      }
+      }, editando ? "Atualizando..." : "Salvando...");
       showToast(editando ? "Usuário atualizado com sucesso." : "Usuário criado com sucesso.");
       navigate("/usuarios");
     } catch (error) {

@@ -5,6 +5,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { LoaderProvider } from "./context/LoaderContext";
 import { ToastProvider } from "./context/ToastContext";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
@@ -22,8 +23,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
       <ToastProvider>
-        <AuthProvider>
-          <Routes>
+        <LoaderProvider>
+          <AuthProvider>
+            <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route
               path="/"
@@ -47,8 +49,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="requerimentos/:posto" element={<RequerimentosPorPostoPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AuthProvider>
+            </Routes>
+          </AuthProvider>
+        </LoaderProvider>
       </ToastProvider>
     </BrowserRouter>
   </React.StrictMode>

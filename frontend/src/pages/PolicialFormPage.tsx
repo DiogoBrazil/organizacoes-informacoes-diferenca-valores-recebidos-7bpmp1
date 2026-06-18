@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import FormActions from "../components/FormActions";
 import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
+import { useLoader } from "../context/LoaderContext";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
 import { maskMatricula } from "../services/masks";
@@ -15,6 +16,7 @@ export default function PolicialFormPage() {
   const editando = Boolean(id);
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { withLoader } = useLoader();
   const [loading, setLoading] = useState(editando);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -55,11 +57,13 @@ export default function PolicialFormPage() {
       nome_completo: form.nome_completo,
     };
     try {
-      if (editando) {
-        await api.put(`/policiais/${id}`, payload);
-      } else {
-        await api.post("/policiais", payload);
-      }
+      await withLoader(async () => {
+        if (editando) {
+          await api.put(`/policiais/${id}`, payload);
+        } else {
+          await api.post("/policiais", payload);
+        }
+      }, editando ? "Atualizando..." : "Salvando...");
       showToast(editando ? "Policial atualizado com sucesso." : "Policial criado com sucesso.");
       navigate("/policiais");
     } catch (error) {

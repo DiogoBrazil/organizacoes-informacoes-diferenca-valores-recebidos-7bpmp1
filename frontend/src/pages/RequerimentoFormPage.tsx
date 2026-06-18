@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import FormActions from "../components/FormActions";
 import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
+import { useLoader } from "../context/LoaderContext";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
 import {
@@ -61,6 +62,7 @@ export default function RequerimentoFormPage() {
   const editando = Boolean(id);
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { withLoader } = useLoader();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [policiais, setPoliciais] = useState<Policial[]>([]);
@@ -168,11 +170,13 @@ export default function RequerimentoFormPage() {
     }
     setSaving(true);
     try {
-      if (editando) {
-        await api.put(`/requerimentos/${id}`, form);
-      } else {
-        await api.post("/requerimentos", form);
-      }
+      await withLoader(async () => {
+        if (editando) {
+          await api.put(`/requerimentos/${id}`, form);
+        } else {
+          await api.post("/requerimentos", form);
+        }
+      }, editando ? "Atualizando..." : "Salvando...");
       showToast(
         editando ? "Requerimento atualizado com sucesso." : "Requerimento criado com sucesso."
       );

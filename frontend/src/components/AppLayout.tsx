@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 
 import logo7Bpm from "../assets/images/logo-7bpm.png";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "../context/LoaderContext";
 
 const navItems = [
   { to: "/", label: "Início", icon: Home },
@@ -21,11 +22,13 @@ function initials(name: string) {
 
 export default function AppLayout() {
   const { logout, usuario } = useAuth();
+  const { withLoader } = useLoader();
   const location = useLocation();
   const navigate = useNavigate();
   const isHome = location.pathname === "/";
 
-  function handleLogout() {
+  async function handleLogout() {
+    await withLoader(async () => {}, "Saindo...");
     logout();
     navigate("/login", { replace: true });
   }
