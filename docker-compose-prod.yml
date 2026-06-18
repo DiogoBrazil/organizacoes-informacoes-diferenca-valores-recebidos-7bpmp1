@@ -64,6 +64,10 @@ services:
     image: traefik:v3.0
     container_name: pmro_traefik
     restart: unless-stopped
+    environment:
+      # Fixa a versão da API do Docker (o daemon da VPS exige API >= 1.40 e o
+      # cliente embutido no Traefik cairia no default antigo 1.24 sem isso).
+      DOCKER_API_VERSION: "1.44"
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
