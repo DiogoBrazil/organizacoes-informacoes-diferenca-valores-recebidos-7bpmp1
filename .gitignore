@@ -1,9 +1,6 @@
 .env
 .env.prod
 
-# Certificados Let's Encrypt (gerados pelo Traefik em produção)
-letsencrypt/acme.json
-
 __pycache__/
 *.py[cod]
 .pytest_cache/
