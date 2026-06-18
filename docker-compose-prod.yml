@@ -63,10 +63,9 @@ services:
       # CA de STAGING durante a validação (limites altos, certificado não-confiável).
       # Após validar o fluxo, comente esta linha para usar a produção.
       - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
-      # Desafio HTTP-01 na porta 80. O redirect 80->443 é feito no nível de
-      # router (traefik/dynamic/routers.yml), que não interfere no desafio.
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # Desafio TLS-ALPN-01 (porta 443): a VPS está atrás de NAT e só a :443 é
+      # encaminhada do hipervisor; a :80 não chega, então HTTP-01 não funciona.
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
       - "--log.level=INFO"
     ports:
       - "80:80"
