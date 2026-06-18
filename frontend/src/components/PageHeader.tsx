@@ -19,14 +19,11 @@ export default function PageHeader({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3.5">
           {Icon ? (
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gov-primary/10 text-gov-primary ring-1 ring-inset ring-gov-primary/20">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gov-primary/15 bg-gov-primary/10 text-gov-primary">
               <Icon className="h-[22px] w-[22px]" strokeWidth={2.1} />
             </span>
           ) : (
-            <span
-              aria-hidden
-              className="mt-1.5 h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-gov-secondary to-gov-primary"
-            />
+            <span aria-hidden className="mt-1.5 h-8 w-1.5 shrink-0 rounded-full bg-gov-primary" />
           )}
           <div className="min-w-0">
             {eyebrow ? (

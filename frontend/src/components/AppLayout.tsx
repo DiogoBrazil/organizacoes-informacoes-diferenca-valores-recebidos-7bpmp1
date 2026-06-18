@@ -32,12 +32,12 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-gov-bg">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 shadow-header backdrop-blur">
-        <div aria-hidden className="h-1 w-full bg-gradient-to-r from-gov-ink via-gov-secondary to-gov-primary" />
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-header">
+        <div aria-hidden className="h-[3px] w-full bg-gov-primary" />
         <div
           className={
             isHome
-              ? "page-shell flex flex-col items-center gap-4 py-7 sm:relative"
+              ? "page-shell flex flex-col items-center gap-3 py-7 sm:relative"
               : "page-shell flex min-h-16 flex-wrap items-center justify-between gap-3 py-3.5"
           }
         >
@@ -50,19 +50,26 @@ export default function AppLayout() {
           >
             <img
               src={logo7Bpm}
-              alt="Logo oficial do 7º BPMP1"
+              alt="Logo oficial do 7º BPM P1"
               className={
                 isHome
-                  ? "h-28 w-28 shrink-0 object-contain drop-shadow-sm sm:h-32 sm:w-32"
+                  ? "h-28 w-28 shrink-0 object-contain sm:h-32 sm:w-32"
                   : "h-12 w-12 shrink-0 object-contain"
               }
             />
+            {!isHome ? (
+              <span aria-hidden className="hidden h-10 w-px bg-slate-200 sm:block" />
+            ) : null}
             <div className={isHome ? "" : "min-w-0"}>
-              {!isHome ? (
-                <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-gov-primary/80">
-                  7º BPMP1 · PMRO
-                </p>
-              ) : null}
+              <p
+                className={
+                  isHome
+                    ? "text-[0.72rem] font-bold uppercase tracking-[0.18em] text-gov-primary"
+                    : "text-[0.68rem] font-bold uppercase tracking-[0.16em] text-gov-primary"
+                }
+              >
+                7º BPM P1 • PMRO
+              </p>
               <h1
                 className={
                   isHome
@@ -72,6 +79,9 @@ export default function AppLayout() {
               >
                 Gestão de requerimentos sobre recálculo de valores recebidos
               </h1>
+              {isHome ? (
+                <p className="mt-1 text-sm text-gov-muted">Polícia Militar do Estado de Rondônia</p>
+              ) : null}
             </div>
           </div>
           <div
@@ -82,11 +92,11 @@ export default function AppLayout() {
             }
           >
             {usuario ? (
-              <div className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50/80 py-1 pl-1 pr-3">
+              <div className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50 py-1 pl-1 pr-3">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gov-primary text-xs font-bold text-white">
                   {initials(usuario.nome_completo)}
                 </span>
-                <span className="hidden text-sm font-semibold text-gov-text sm:inline">
+                <span className="hidden max-w-[14rem] truncate text-sm font-semibold text-gov-text sm:inline">
                   {usuario.nome_completo}
                 </span>
               </div>
@@ -98,7 +108,10 @@ export default function AppLayout() {
           </div>
         </div>
         {!isHome ? (
-          <nav className="page-shell flex gap-1.5 overflow-x-auto pb-2.5">
+          <nav
+            aria-label="Navegação principal"
+            className="page-shell -mb-px flex gap-1 overflow-x-auto"
+          >
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -107,10 +120,10 @@ export default function AppLayout() {
                   to={item.to}
                   end={item.to === "/"}
                   className={({ isActive }) =>
-                    `focus-ring inline-flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors ${
+                    `focus-ring inline-flex shrink-0 items-center gap-2 border-b-2 px-2.5 pb-3 pt-1.5 text-sm font-semibold transition-colors ${
                       isActive
-                        ? "bg-gov-primary/10 text-gov-primary ring-1 ring-inset ring-gov-primary/20"
-                        : "text-gov-muted hover:bg-slate-100 hover:text-gov-text"
+                        ? "border-gov-primary text-gov-primary"
+                        : "border-transparent text-gov-muted hover:border-slate-300 hover:text-gov-text"
                     }`
                   }
                 >

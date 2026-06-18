@@ -40,13 +40,13 @@ export default function DashboardPage() {
             <Link
               key={card.to}
               to={card.to}
-              className="focus-ring group surface-card relative overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-gov-secondary/50 hover:shadow-header"
+              className="focus-ring group surface-card relative overflow-hidden p-5 transition-colors duration-200 hover:border-gov-primary/40 hover:shadow-card"
             >
               <span
                 aria-hidden
-                className="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gradient-to-r from-gov-secondary to-gov-primary transition-transform duration-200 group-hover:scale-x-100"
+                className="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gov-primary transition-transform duration-200 group-hover:scale-x-100"
               />
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gov-primary/10 text-gov-primary ring-1 ring-inset ring-gov-primary/15 transition-colors group-hover:bg-gov-primary group-hover:text-white">
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-gov-primary/15 bg-gov-primary/10 text-gov-primary transition-colors group-hover:bg-gov-primary group-hover:text-white">
                 <Icon className="h-6 w-6" />
               </span>
               <h3 className="mt-4 font-display text-lg font-bold tracking-tight text-gov-text">

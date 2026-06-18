@@ -43,14 +43,14 @@ export default function RequerimentosPage() {
             <Link
               key={posto}
               to={`/requerimentos/${encodeURIComponent(posto)}`}
-              className="focus-ring group surface-card relative overflow-hidden p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-gov-secondary/50 hover:shadow-header"
+              className="focus-ring group surface-card relative overflow-hidden p-4 transition-colors duration-200 hover:border-gov-primary/40 hover:shadow-card"
             >
               <span
                 aria-hidden
-                className="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gradient-to-r from-gov-secondary to-gov-primary transition-transform duration-200 group-hover:scale-x-100"
+                className="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gov-primary transition-transform duration-200 group-hover:scale-x-100"
               />
               <div className="flex items-center justify-between gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gov-primary/10 text-gov-primary ring-1 ring-inset ring-gov-primary/15">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-gov-primary/15 bg-gov-primary/10 text-gov-primary">
                   <FileText className="h-5 w-5" />
                 </span>
                 <span className="rounded-full bg-gov-primary px-2.5 py-1 text-sm font-bold tabular-nums text-white">
