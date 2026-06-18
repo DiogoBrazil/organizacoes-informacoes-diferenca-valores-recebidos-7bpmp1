@@ -39,8 +39,7 @@ export default function LoginPage() {
             "radial-gradient(900px 500px at 12% -10%, rgba(38,112,232,0.45), transparent 60%), radial-gradient(800px 520px at 100% 110%, rgba(19,81,180,0.5), transparent 55%)",
         }}
       />
-      <section className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl">
-        <div aria-hidden className="h-1.5 w-full bg-gradient-to-r from-gov-secondary via-gov-primary to-gov-ink" />
+      <section className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <div className="p-7 sm:p-8">
           <div className="mb-6 flex flex-col items-center gap-3 text-center">
             <img
@@ -53,7 +52,6 @@ export default function LoginPage() {
                 Polícia Militar de Rondônia
               </p>
               <h1 className="font-display text-2xl font-bold tracking-tight text-gov-text">7º BPMP1</h1>
-              <p className="mt-1 text-sm text-gov-muted">Gestão de requerimentos de recálculo</p>
             </div>
           </div>
         {expired ? (
