@@ -234,21 +234,6 @@ const thinBorder: NonNullable<XLSX.CellStyle["border"]> = {
   left: { style: "thin", color: { rgb: "CBD5E1" } },
 };
 
-const titleStyle: XLSX.CellStyle = {
-  font: { bold: true, sz: 14, color: { rgb: "0F172A" } },
-  alignment: { horizontal: "center", vertical: "center" },
-};
-
-const subtitleStyle: XLSX.CellStyle = {
-  font: { bold: true, sz: 11, color: { rgb: "475569" } },
-  alignment: { horizontal: "center", vertical: "center" },
-};
-
-const infoStyle: XLSX.CellStyle = {
-  font: { sz: 10, color: { rgb: "475569" } },
-  alignment: { horizontal: "center", vertical: "center" },
-};
-
 const headerStyle: XLSX.CellStyle = {
   font: { bold: true, color: { rgb: "FFFFFF" } },
   fill: { fgColor: { rgb: "1351B4" } },
@@ -276,34 +261,21 @@ const zebraTextStyle: XLSX.CellStyle = {
   fill: { fgColor: { rgb: "F8FAFC" } },
 };
 
-const columnWidths = [
-  8,
-  22,
-  18,
-  12,
-  36,
-  12,
-  18,
-  22,
-  32,
-  14,
-  22,
-  16,
-  22,
-  16,
-  22,
-  16,
-  22,
-  16,
-  22,
-  16,
-  18,
-  18,
-  18,
-  18,
-  18,
-  18,
-];
+// Larguras de coluna calculadas pelo conteúdo: o cabeçalho quebra linha
+// (wrapText), então limitamos a influência dele para não alargar demais.
+function computeColumnWidths(headers: string[], dataRows: Array<Array<string | number>>) {
+  const MIN_WIDTH = 8;
+  const MAX_WIDTH = 42;
+  const HEADER_CAP = 16;
+  return headers.map((header, column) => {
+    let widest = Math.min(header.length, HEADER_CAP);
+    for (const row of dataRows) {
+      const length = String(row[column] ?? "").length;
+      if (length > widest) widest = length;
+    }
+    return { wch: Math.min(Math.max(widest + 2, MIN_WIDTH), MAX_WIDTH) };
+  });
+}
 
 function setCellStyle(worksheet: ExcelWorksheet, address: string, style: XLSX.CellStyle) {
   const cell = worksheet[address] as ExcelCell | undefined;
@@ -326,55 +298,26 @@ function styleRange(
 
 export function exportRequerimentosExcel(posto: PostoGraduacao, requerimentos: Requerimento[]) {
   const headers = requerimentoReportColumns.map((column) => column.header);
-  const generatedAt = new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date());
   const dataRows = requerimentos.map((item, index) =>
     requerimentoReportColumns.map((column) => column.value(item, index))
   );
-  const sheetRows = [
-    ["POLÍCIA MILITAR DO ESTADO DE RONDÔNIA - PMRO"],
-    ["7º BPMP1 - Gestão de requerimentos sobre recálculo de valores recebidos"],
-    [`Lista de Requerimentos - ${posto}`],
-    [`Gerado em: ${generatedAt}`],
-    [],
-    headers,
-    ...dataRows,
-  ];
+  const sheetRows = [headers, ...dataRows];
   const worksheet = XLSX.utils.aoa_to_sheet(sheetRows) as ExcelWorksheet;
   const lastColumn = headers.length - 1;
-  const headerRow = 5;
-  const firstDataRow = headerRow + 1;
-  const lastDataRow = firstDataRow + dataRows.length - 1;
+  const headerRow = 0;
+  const firstDataRow = 1;
+  const lastDataRow = dataRows.length;
 
-  worksheet["!merges"] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: lastColumn } },
-    { s: { r: 1, c: 0 }, e: { r: 1, c: lastColumn } },
-    { s: { r: 2, c: 0 }, e: { r: 2, c: lastColumn } },
-    { s: { r: 3, c: 0 }, e: { r: 3, c: lastColumn } },
-  ];
-  worksheet["!cols"] = columnWidths.map((wch) => ({ wch }));
-  worksheet["!rows"] = [
-    { hpt: 24 },
-    { hpt: 20 },
-    { hpt: 20 },
-    { hpt: 18 },
-    { hpt: 8 },
-    { hpt: 36 },
-  ];
+  worksheet["!cols"] = computeColumnWidths(headers, dataRows);
+  worksheet["!rows"] = [{ hpt: 40 }];
   worksheet["!autofilter"] = {
     ref: XLSX.utils.encode_range({
       s: { r: headerRow, c: 0 },
       e: { r: Math.max(headerRow, lastDataRow), c: lastColumn },
     }),
   };
-  worksheet["!freeze"] = { xSplit: 0, ySplit: headerRow + 1, topLeftCell: "A7", activePane: "bottomLeft" };
+  worksheet["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft" };
 
-  setCellStyle(worksheet, "A1", titleStyle);
-  setCellStyle(worksheet, "A2", subtitleStyle);
-  setCellStyle(worksheet, "A3", subtitleStyle);
-  setCellStyle(worksheet, "A4", infoStyle);
   styleRange(
     worksheet,
     { s: { r: headerRow, c: 0 }, e: { r: headerRow, c: lastColumn } },
