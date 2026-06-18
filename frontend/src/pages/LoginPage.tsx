@@ -2,14 +2,17 @@ import { FormEvent, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "../context/LoaderContext";
 import { getErrorMessage } from "../services/api";
+import logo7Bpm from "../assets/images/logo-7bpm.png";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@pmro.local");
-  const [senha, setSenha] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { withLoader } = useLoader();
   const navigate = useNavigate();
   const location = useLocation();
   const expired = new URLSearchParams(location.search).get("expired");
@@ -19,7 +22,7 @@ export default function LoginPage() {
     setErro("");
     setLoading(true);
     try {
-      await login(email, senha);
+      await withLoader(() => login(email, senha), "Entrando...");
       navigate("/", { replace: true });
     } catch (error) {
       setErro(getErrorMessage(error));
@@ -29,17 +32,30 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gov-bg p-4">
-      <section className="w-full max-w-md rounded border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded bg-gov-primary font-bold text-white">
-            PM
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gov-ink p-4">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-90"
+        style={{
+          background:
+            "radial-gradient(900px 500px at 12% -10%, rgba(38,112,232,0.45), transparent 60%), radial-gradient(800px 520px at 100% 110%, rgba(19,81,180,0.5), transparent 55%)",
+        }}
+      />
+      <section className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="p-7 sm:p-8">
+          <div className="mb-6 flex flex-col items-center gap-3 text-center">
+            <img
+              src={logo7Bpm}
+              alt="Logo oficial do 7º BPMP1"
+              className="h-24 w-24 shrink-0 object-contain drop-shadow-sm"
+            />
+            <div>
+              <p className="text-[0.7rem] font-bold uppercase tracking-[0.18em] text-gov-primary/80">
+                Polícia Militar de Rondônia
+              </p>
+              <h1 className="font-display text-2xl font-bold tracking-tight text-gov-text">7º BPMP1</h1>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-gov-muted">PMRO</p>
-            <h1 className="text-xl font-bold">Gestão de Requerimentos</h1>
-          </div>
-        </div>
         {expired ? (
           <div className="mb-4 rounded border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-900">
             Sua sessão expirou. Entre novamente para continuar.
@@ -71,14 +87,11 @@ export default function LoginPage() {
               className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
             />
           </label>
-          <button
-            type="submit"
-            disabled={loading}
-            className="focus-ring w-full rounded bg-gov-primary px-4 py-2 font-semibold text-white hover:bg-gov-secondary disabled:opacity-70"
-          >
+          <button type="submit" disabled={loading} className="btn btn-primary w-full py-2.5">
             {loading ? "Entrando..." : "Entrar"}
           </button>
-        </form>
+          </form>
+        </div>
       </section>
     </main>
   );

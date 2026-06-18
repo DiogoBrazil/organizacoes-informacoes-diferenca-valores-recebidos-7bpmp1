@@ -1,17 +1,23 @@
-import { Edit, Plus, Search, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Edit, Plus, Search, Trash2, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ConfirmModal from "../components/ConfirmModal";
 import LoadingState from "../components/LoadingState";
+import Pagination from "../components/Pagination";
 import PageHeader from "../components/PageHeader";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
+import { parseTotalCount } from "../services/masks";
 import type { Usuario } from "../types";
+
+const PER_PAGE = 10;
 
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [busca, setBusca] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [removendo, setRemovendo] = useState<Usuario | null>(null);
   const { showToast } = useToast();
@@ -19,8 +25,11 @@ export default function UsuariosPage() {
   async function carregar() {
     setLoading(true);
     try {
-      const { data } = await api.get<Usuario[]>("/usuarios");
-      setUsuarios(data);
+      const response = await api.get<Usuario[]>("/usuarios", {
+        params: { busca: busca || undefined, page, per_page: PER_PAGE },
+      });
+      setUsuarios(response.data);
+      setTotal(parseTotalCount(response.headers["x-total-count"]));
     } catch (error) {
       showToast(getErrorMessage(error), "error");
     } finally {
@@ -30,17 +39,7 @@ export default function UsuariosPage() {
 
   useEffect(() => {
     void carregar();
-  }, []);
-
-  const filtrados = useMemo(() => {
-    const termo = busca.toLowerCase().trim();
-    if (!termo) return usuarios;
-    return usuarios.filter(
-      (usuario) =>
-        usuario.nome_completo.toLowerCase().includes(termo) ||
-        usuario.email.toLowerCase().includes(termo)
-    );
-  }, [usuarios, busca]);
+  }, [busca, page]);
 
   async function confirmarExclusao() {
     if (!removendo) return;
@@ -58,12 +57,11 @@ export default function UsuariosPage() {
     <>
       <PageHeader
         title="Usuários"
+        eyebrow="Administração"
         subtitle="Gerencie os operadores autenticados do sistema."
+        icon={Users}
         actions={
-          <Link
-            to="/usuarios/novo"
-            className="focus-ring inline-flex items-center gap-2 rounded bg-gov-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gov-secondary"
-          >
+          <Link to="/usuarios/novo" className="btn btn-primary">
             <Plus className="h-4 w-4" />
             Adicionar Usuário
           </Link>
@@ -73,7 +71,10 @@ export default function UsuariosPage() {
         <Search className="h-4 w-4 text-gov-muted" />
         <input
           value={busca}
-          onChange={(event) => setBusca(event.target.value)}
+          onChange={(event) => {
+            setBusca(event.target.value);
+            setPage(1);
+          }}
           placeholder="Buscar por nome ou e-mail"
           className="focus-ring w-full border-0 bg-transparent outline-none"
         />
@@ -81,26 +82,26 @@ export default function UsuariosPage() {
       {loading ? (
         <LoadingState />
       ) : (
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white">
-          <table className="w-full min-w-[760px] text-left text-sm">
+        <div className="overflow-x-auto rounded border border-slate-300 bg-white">
+          <table className="w-full min-w-[760px] border-collapse text-center text-sm">
             <thead className="bg-slate-100 text-gov-muted">
               <tr>
-                <th className="px-4 py-3">Nome Completo</th>
-                <th className="px-4 py-3">E-mail</th>
-                <th className="px-4 py-3">Data de Cadastro</th>
-                <th className="px-4 py-3 text-right">Ações</th>
+                <th className="border border-slate-300 px-4 py-3">Nome Completo</th>
+                <th className="border border-slate-300 px-4 py-3">E-mail</th>
+                <th className="border border-slate-300 px-4 py-3">Data de Cadastro</th>
+                <th className="border border-slate-300 px-4 py-3">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {filtrados.map((usuario, index) => (
+              {usuarios.map((usuario, index) => (
                 <tr key={usuario.id} className={index % 2 ? "bg-slate-50" : "bg-white"}>
-                  <td className="px-4 py-3 font-medium">{usuario.nome_completo}</td>
-                  <td className="px-4 py-3">{usuario.email}</td>
-                  <td className="px-4 py-3">
+                  <td className="border border-slate-300 px-4 py-3 font-medium">{usuario.nome_completo}</td>
+                  <td className="border border-slate-300 px-4 py-3">{usuario.email}</td>
+                  <td className="border border-slate-300 px-4 py-3">
                     {new Intl.DateTimeFormat("pt-BR").format(new Date(usuario.criado_em))}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
+                  <td className="border border-slate-300 px-4 py-3">
+                    <div className="flex justify-center gap-2">
                       <Link
                         to={`/usuarios/${usuario.id}/editar`}
                         className="focus-ring rounded p-2 text-gov-primary hover:bg-blue-50"
@@ -120,9 +121,9 @@ export default function UsuariosPage() {
                   </td>
                 </tr>
               ))}
-              {!filtrados.length ? (
+              {!usuarios.length ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-gov-muted">
+                  <td colSpan={4} className="border border-slate-300 px-4 py-8 text-center text-gov-muted">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>
@@ -131,6 +132,9 @@ export default function UsuariosPage() {
           </table>
         </div>
       )}
+      {!loading ? (
+        <Pagination page={page} total={total} perPage={PER_PAGE} onPageChange={setPage} />
+      ) : null}
       <ConfirmModal
         open={Boolean(removendo)}
         title="Excluir usuário"

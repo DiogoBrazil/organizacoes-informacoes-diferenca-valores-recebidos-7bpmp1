@@ -8,16 +8,24 @@ export default {
         gov: {
           primary: "#1351B4",
           secondary: "#2670E8",
-          bg: "#F8F8F8",
-          text: "#1B1B1B",
-          muted: "#555555",
-          success: "#168821",
+          ink: "#0A2A5E",
+          bg: "#F4F6FA",
+          surface: "#FFFFFF",
+          text: "#13213B",
+          muted: "#5A6B82",
+          line: "#E2E8F0",
+          success: "#157A1F",
           warning: "#FFCD07",
-          danger: "#E52207"
+          danger: "#C5221F"
         }
       },
       fontFamily: {
-        sans: ["Inter", "Arial", "sans-serif"]
+        sans: ['"Public Sans"', "system-ui", "Arial", "sans-serif"],
+        display: ['"Libre Franklin"', '"Public Sans"', "sans-serif"]
+      },
+      boxShadow: {
+        card: "0 1px 2px rgba(16, 33, 64, 0.05)",
+        header: "0 1px 2px rgba(16, 33, 64, 0.04)"
       }
     }
   },

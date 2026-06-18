@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentUser, DbSession
@@ -21,10 +21,21 @@ def listar_postos(_: CurrentUser) -> list[str]:
 def listar_policiais(
     db: DbSession,
     _: CurrentUser,
+    response: Response,
     posto_graduacao: PostoGraduacao | None = None,
     busca: str | None = Query(default=None, max_length=80),
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=10, ge=1, le=10),
 ) -> list[PolicialPublic]:
-    return crud.list_policiais(db, posto_graduacao=posto_graduacao, busca=busca)
+    policiais, total = crud.list_policiais(
+        db,
+        posto_graduacao=posto_graduacao,
+        busca=busca,
+        offset=(page - 1) * per_page,
+        limit=per_page,
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return policiais
 
 
 @router.get("/{policial_id}", response_model=PolicialPublic)
@@ -39,7 +50,11 @@ def buscar_policial(policial_id: UUID, db: DbSession, _: CurrentUser) -> Policia
 def criar_policial(data: PolicialCreate, db: DbSession, _: CurrentUser) -> PolicialPublic:
     if crud.get_policial_by_matricula(db, data.matricula):
         raise HTTPException(status_code=409, detail="Já existe policial com esta matrícula.")
-    return crud.create_policial(db, data)
+    try:
+        return crud.create_policial(db, data)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Já existe policial com esta matrícula.") from exc
 
 
 @router.put("/{policial_id}", response_model=PolicialPublic)

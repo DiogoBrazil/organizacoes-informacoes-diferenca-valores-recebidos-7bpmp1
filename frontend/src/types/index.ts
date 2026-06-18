@@ -41,10 +41,12 @@ export interface Requerimento {
   policial_id: string;
   num_processo_sei_requerimento: string;
   data_recebimento_opm: string;
+  hora_recebimento_opm: string;
   num_sei_certidao_opm: string;
   tem_afastamentos: boolean;
   gozou_ferias_5_anos: boolean;
   tem_prioridade_legal: boolean;
+  enviado_para_cp: boolean;
   abono_pecuniario_2021?: string | null;
   ferias_1_3_2021?: string | null;
   abono_pecuniario_2022?: string | null;

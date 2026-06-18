@@ -1,24 +1,35 @@
+import { FileText } from "lucide-react";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import FormActions from "../components/FormActions";
 import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
+import { useLoader } from "../context/LoaderContext";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
+import {
+  maskSeiProcess,
+  normalizeCurrency,
+  normalizeMonthYear,
+  parseTotalCount,
+} from "../services/masks";
 import type { Policial, Requerimento, RequerimentoPayload } from "../types";
 
 const anosAbono = [2021, 2022, 2023, 2024, 2025] as const;
 const anosSaude = [2021, 2022, 2023, 2024, 2025, 2026] as const;
+const PER_PAGE = 10;
 
 const initialForm: RequerimentoPayload = {
   policial_id: "",
   num_processo_sei_requerimento: "",
   data_recebimento_opm: "",
+  hora_recebimento_opm: "",
   num_sei_certidao_opm: "",
   tem_afastamentos: false,
   gozou_ferias_5_anos: false,
   tem_prioridade_legal: false,
+  enviado_para_cp: false,
   abono_pecuniario_2021: "",
   ferias_1_3_2021: "",
   abono_pecuniario_2022: "",
@@ -51,10 +62,12 @@ export default function RequerimentoFormPage() {
   const editando = Boolean(id);
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { withLoader } = useLoader();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [policiais, setPoliciais] = useState<Policial[]>([]);
   const [buscaPolicial, setBuscaPolicial] = useState("");
+  const [mostrarBuscaPolicial, setMostrarBuscaPolicial] = useState(false);
   const [form, setForm] = useState<RequerimentoPayload>(initialForm);
 
   const policialSelecionado = useMemo(
@@ -63,6 +76,7 @@ export default function RequerimentoFormPage() {
   );
 
   const policiaisFiltrados = useMemo(() => {
+    if (!mostrarBuscaPolicial) return [];
     const termo = buscaPolicial.toLowerCase().trim();
     if (!termo) return policiais.slice(0, 8);
     return policiais
@@ -72,13 +86,29 @@ export default function RequerimentoFormPage() {
           String(policial.matricula).includes(termo)
       )
       .slice(0, 8);
-  }, [policiais, buscaPolicial]);
+  }, [policiais, buscaPolicial, mostrarBuscaPolicial]);
 
   useEffect(() => {
     async function carregar() {
       try {
-        const [{ data: policiaisData }, requerimentoResponse] = await Promise.all([
-          api.get<Policial[]>("/policiais"),
+        async function carregarPoliciais() {
+          const primeiraPagina = await api.get<Policial[]>("/policiais", {
+            params: { page: 1, per_page: PER_PAGE },
+          });
+          const total = parseTotalCount(primeiraPagina.headers["x-total-count"]);
+          const totalPaginas = Math.max(1, Math.ceil(total / PER_PAGE));
+          const todos = [...primeiraPagina.data];
+          for (let page = 2; page <= totalPaginas; page += 1) {
+            const { data } = await api.get<Policial[]>("/policiais", {
+              params: { page, per_page: PER_PAGE },
+            });
+            todos.push(...data);
+          }
+          return todos;
+        }
+
+        const [policiaisData, requerimentoResponse] = await Promise.all([
+          carregarPoliciais(),
           editando ? api.get<Requerimento>(`/requerimentos/${id}`) : Promise.resolve(null),
         ]);
         setPoliciais(policiaisData);
@@ -88,10 +118,12 @@ export default function RequerimentoFormPage() {
             policial_id: requerimento.policial_id,
             num_processo_sei_requerimento: requerimento.num_processo_sei_requerimento,
             data_recebimento_opm: requerimento.data_recebimento_opm,
+            hora_recebimento_opm: requerimento.hora_recebimento_opm,
             num_sei_certidao_opm: requerimento.num_sei_certidao_opm,
             tem_afastamentos: requerimento.tem_afastamentos,
             gozou_ferias_5_anos: requerimento.gozou_ferias_5_anos,
             tem_prioridade_legal: requerimento.tem_prioridade_legal,
+            enviado_para_cp: requerimento.enviado_para_cp,
             abono_pecuniario_2021: requerimento.abono_pecuniario_2021 ?? "",
             ferias_1_3_2021: requerimento.ferias_1_3_2021 ?? "",
             abono_pecuniario_2022: requerimento.abono_pecuniario_2022 ?? "",
@@ -132,13 +164,19 @@ export default function RequerimentoFormPage() {
       showToast("Selecione um policial militar.", "error");
       return;
     }
+    if (!/^\d{4}\.\d{6}\/\d{4}-\d{2}$/.test(form.num_processo_sei_requerimento)) {
+      showToast("Informe o processo SEI no formato 0000.000000/0000-00.", "error");
+      return;
+    }
     setSaving(true);
     try {
-      if (editando) {
-        await api.put(`/requerimentos/${id}`, form);
-      } else {
-        await api.post("/requerimentos", form);
-      }
+      await withLoader(async () => {
+        if (editando) {
+          await api.put(`/requerimentos/${id}`, form);
+        } else {
+          await api.post("/requerimentos", form);
+        }
+      }, editando ? "Atualizando..." : "Salvando...");
       showToast(
         editando ? "Requerimento atualizado com sucesso." : "Requerimento criado com sucesso."
       );
@@ -160,20 +198,23 @@ export default function RequerimentoFormPage() {
     <>
       <PageHeader
         title={editando ? "Editar Requerimento" : "Adicionar Requerimento"}
+        eyebrow={editando ? "Requerimento · edição" : "Requerimento · novo cadastro"}
         subtitle="Registre as informações conferidas pela OPM."
+        icon={FileText}
       />
-      <form onSubmit={handleSubmit} className="space-y-6 rounded border border-slate-200 bg-white p-5 shadow-sm">
+      <form onSubmit={handleSubmit} className="surface-card space-y-6 p-5 sm:p-6">
         <FieldSection title="Identificação do Processo">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <label className="block">
               <span className="text-sm font-semibold">Nº Processo SEI</span>
               <input
                 value={form.num_processo_sei_requerimento}
                 onChange={(event) =>
-                  updateField("num_processo_sei_requerimento", event.target.value)
+                  updateField("num_processo_sei_requerimento", maskSeiProcess(event.target.value))
                 }
                 required
                 placeholder="0000.000000/0000-00"
+                maxLength={19}
                 className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
               />
             </label>
@@ -183,6 +224,17 @@ export default function RequerimentoFormPage() {
                 type="date"
                 value={form.data_recebimento_opm}
                 onChange={(event) => updateField("data_recebimento_opm", event.target.value)}
+                required
+                className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold">Hora Recebimento OPM</span>
+              <input
+                type="time"
+                step="1"
+                value={form.hora_recebimento_opm}
+                onChange={(event) => updateField("hora_recebimento_opm", event.target.value)}
                 required
                 className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
               />
@@ -205,30 +257,37 @@ export default function RequerimentoFormPage() {
               <span className="text-sm font-semibold">Buscar Policial</span>
               <input
                 value={buscaPolicial}
-                onChange={(event) => setBuscaPolicial(event.target.value)}
+                onFocus={() => setMostrarBuscaPolicial(true)}
+                onChange={(event) => {
+                  setBuscaPolicial(event.target.value);
+                  setMostrarBuscaPolicial(true);
+                }}
                 placeholder="Digite matrícula ou nome"
                 className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
               />
-              <div className="mt-2 max-h-48 overflow-auto rounded border border-slate-200">
-                {policiaisFiltrados.map((policial) => (
-                  <button
-                    key={policial.id}
-                    type="button"
-                    onClick={() => {
-                      updateField("policial_id", policial.id);
-                      setBuscaPolicial(`${policial.matricula} - ${policial.nome_completo}`);
-                    }}
-                    className={`block w-full px-3 py-2 text-left text-sm hover:bg-blue-50 ${
-                      policial.id === form.policial_id ? "bg-blue-50 font-semibold" : ""
-                    }`}
-                  >
-                    {policial.matricula} - {policial.nome_completo}
-                  </button>
-                ))}
-                {!policiaisFiltrados.length ? (
-                  <div className="px-3 py-3 text-sm text-gov-muted">Nenhum policial encontrado.</div>
-                ) : null}
-              </div>
+              {mostrarBuscaPolicial ? (
+                <div className="mt-2 max-h-48 overflow-auto rounded border border-slate-200">
+                  {policiaisFiltrados.map((policial) => (
+                    <button
+                      key={policial.id}
+                      type="button"
+                      onClick={() => {
+                        updateField("policial_id", policial.id);
+                        setBuscaPolicial(`${policial.matricula} - ${policial.nome_completo}`);
+                        setMostrarBuscaPolicial(false);
+                      }}
+                      className={`block w-full px-3 py-2 text-left text-sm hover:bg-blue-50 ${
+                        policial.id === form.policial_id ? "bg-blue-50 font-semibold" : ""
+                      }`}
+                    >
+                      {policial.matricula} - {policial.nome_completo}
+                    </button>
+                  ))}
+                  {buscaPolicial.trim() && !policiaisFiltrados.length ? (
+                    <div className="px-3 py-3 text-sm text-gov-muted">Nenhum policial encontrado.</div>
+                  ) : null}
+                </div>
+              ) : null}
             </label>
             <label className="block">
               <span className="text-sm font-semibold">Posto/Graduação</span>
@@ -255,6 +314,7 @@ export default function RequerimentoFormPage() {
               ["tem_afastamentos", "Tem afastamentos?"],
               ["gozou_ferias_5_anos", "Gozou férias nos últimos 5 anos?"],
               ["tem_prioridade_legal", "Tem prioridade legal?"],
+              ["enviado_para_cp", "Enviado para CP?"],
             ].map(([key, label]) => (
               <label key={key} className="block">
                 <span className="text-sm font-semibold">{label}</span>
@@ -286,9 +346,10 @@ export default function RequerimentoFormPage() {
                   <input
                     value={(form[`abono_pecuniario_${ano}` as keyof RequerimentoPayload] as string) ?? ""}
                     onChange={(event) =>
-                      updateField(`abono_pecuniario_${ano}` as keyof RequerimentoPayload, event.target.value as never)
+                      updateField(`abono_pecuniario_${ano}` as keyof RequerimentoPayload, normalizeMonthYear(event.target.value) as never)
                     }
-                    placeholder="ex: out./2022"
+                    placeholder="ex: out/2022"
+                    maxLength={8}
                     className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
                   />
                 </label>
@@ -297,9 +358,10 @@ export default function RequerimentoFormPage() {
                   <input
                     value={(form[`ferias_1_3_${ano}` as keyof RequerimentoPayload] as string) ?? ""}
                     onChange={(event) =>
-                      updateField(`ferias_1_3_${ano}` as keyof RequerimentoPayload, event.target.value as never)
+                      updateField(`ferias_1_3_${ano}` as keyof RequerimentoPayload, normalizeMonthYear(event.target.value) as never)
                     }
-                    placeholder="ex: out./2022"
+                    placeholder="ex: out/2022"
+                    maxLength={8}
                     className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
                   />
                 </label>
@@ -316,9 +378,13 @@ export default function RequerimentoFormPage() {
                 <input
                   value={(form[`auxilio_saude_${ano}` as keyof RequerimentoPayload] as string) ?? ""}
                   onChange={(event) =>
-                    updateField(`auxilio_saude_${ano}` as keyof RequerimentoPayload, event.target.value as never)
+                    updateField(`auxilio_saude_${ano}` as keyof RequerimentoPayload, event.target.value.replace(/[^\d,]/g, "") as never)
+                  }
+                  onBlur={(event) =>
+                    updateField(`auxilio_saude_${ano}` as keyof RequerimentoPayload, normalizeCurrency(event.target.value) as never)
                   }
                   placeholder="ex: 50,00"
+                  inputMode="decimal"
                   className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
                 />
               </label>

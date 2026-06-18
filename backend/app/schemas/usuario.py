@@ -33,6 +33,7 @@ class UsuarioUpdate(BaseModel):
 
 
 class UsuarioSenhaUpdate(BaseModel):
+    senha_atual: str = Field(min_length=1, max_length=128)
     senha: str = Field(min_length=6, max_length=128)
 
 

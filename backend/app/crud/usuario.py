@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.security import get_password_hash
@@ -16,8 +16,18 @@ def get_usuario_by_email(db: Session, email: str) -> Usuario | None:
     return db.scalar(select(Usuario).where(Usuario.email == email.lower()))
 
 
-def list_usuarios(db: Session) -> list[Usuario]:
-    return list(db.scalars(select(Usuario).order_by(Usuario.nome_completo.asc())).all())
+def list_usuarios(
+    db: Session, busca: str | None = None, offset: int = 0, limit: int | None = None
+) -> tuple[list[Usuario], int]:
+    stmt = select(Usuario)
+    if busca:
+        like = f"%{busca.strip()}%"
+        stmt = stmt.where(or_(Usuario.nome_completo.ilike(like), Usuario.email.ilike(like)))
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    stmt = stmt.order_by(Usuario.nome_completo.asc())
+    if limit is not None:
+        stmt = stmt.offset(offset).limit(limit)
+    return list(db.scalars(stmt).all()), total
 
 
 def create_usuario(db: Session, data: UsuarioCreate) -> Usuario:
