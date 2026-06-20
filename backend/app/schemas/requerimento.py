@@ -1,10 +1,47 @@
-from datetime import date, datetime, time
 import re
+from datetime import date, datetime, time
+from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.core import calculo_constants as C
 from app.schemas.policial import PolicialPublic
+
+
+class RequerimentoEventoIn(BaseModel):
+    # `ano` é o ano de referência (competência) do evento; `data_recebido` é a data
+    # de pagamento, cujo ano pode diferir do de referência (ex.: abono de 2021 pago
+    # em 2022). Ambos limitados a 2021-2026.
+    tipo_evento: str
+    ano: int = Field(ge=C.ANO_INICIAL, le=C.ANO_FINAL)
+    data_recebido: date
+    valor_auxilio_saude: Decimal = Field(gt=0)
+
+    @field_validator("tipo_evento")
+    @classmethod
+    def validar_tipo(cls, value: str) -> str:
+        if value not in C.TIPOS_EVENTO:
+            raise ValueError("Tipo de evento inválido.")
+        return value
+
+    @field_validator("data_recebido")
+    @classmethod
+    def validar_ano_data(cls, value: date) -> date:
+        if not (C.ANO_INICIAL <= value.year <= C.ANO_FINAL):
+            raise ValueError(
+                f"A data de recebimento deve estar entre {C.ANO_INICIAL} e {C.ANO_FINAL}."
+            )
+        return value
+
+
+class RequerimentoEventoPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    tipo_evento: str
+    ano: int
+    data_recebido: date
+    valor_auxilio_saude: Decimal | None
 
 
 class RequerimentoBase(BaseModel):
@@ -17,22 +54,7 @@ class RequerimentoBase(BaseModel):
     gozou_ferias_5_anos: bool = False
     tem_prioridade_legal: bool = False
     enviado_para_cp: bool = False
-    abono_pecuniario_2021: str | None = None
-    ferias_1_3_2021: str | None = None
-    abono_pecuniario_2022: str | None = None
-    ferias_1_3_2022: str | None = None
-    abono_pecuniario_2023: str | None = None
-    ferias_1_3_2023: str | None = None
-    abono_pecuniario_2024: str | None = None
-    ferias_1_3_2024: str | None = None
-    abono_pecuniario_2025: str | None = None
-    ferias_1_3_2025: str | None = None
-    auxilio_saude_2021: str | None = None
-    auxilio_saude_2022: str | None = None
-    auxilio_saude_2023: str | None = None
-    auxilio_saude_2024: str | None = None
-    auxilio_saude_2025: str | None = None
-    auxilio_saude_2026: str | None = None
+    eventos: list[RequerimentoEventoIn] = []
 
     @field_validator("num_processo_sei_requerimento")
     @classmethod
@@ -41,53 +63,13 @@ class RequerimentoBase(BaseModel):
             raise ValueError("O processo SEI deve estar no formato 0000.000000/0000-00.")
         return value
 
-    @field_validator(
-        "abono_pecuniario_2021",
-        "ferias_1_3_2021",
-        "abono_pecuniario_2022",
-        "ferias_1_3_2022",
-        "abono_pecuniario_2023",
-        "ferias_1_3_2023",
-        "abono_pecuniario_2024",
-        "ferias_1_3_2024",
-        "abono_pecuniario_2025",
-        "ferias_1_3_2025",
-        mode="before",
-    )
+    @field_validator("eventos")
     @classmethod
-    def validar_mes_ano(cls, value: str | None) -> str | None:
-        if value in (None, ""):
-            return None
-        if not isinstance(value, str):
-            raise ValueError("Informe mês/ano no formato mmm/aaaa, por exemplo out/2022.")
-        normalized = value.lower().strip().replace("./", "/")
-        if not re.fullmatch(r"[a-z]{3}/\d{4}", normalized):
-            raise ValueError("Informe mês/ano no formato mmm/aaaa, por exemplo out/2022.")
-        return normalized
-
-    @field_validator(
-        "auxilio_saude_2021",
-        "auxilio_saude_2022",
-        "auxilio_saude_2023",
-        "auxilio_saude_2024",
-        "auxilio_saude_2025",
-        "auxilio_saude_2026",
-        mode="before",
-    )
-    @classmethod
-    def validar_valor_brasileiro(cls, value: str | None) -> str | None:
-        if value in (None, ""):
-            return None
-        if not isinstance(value, str):
-            raise ValueError("Informe o valor no formato 50,00.")
-        normalized = value.strip().replace(".", ",")
-        if re.fullmatch(r"\d+", normalized):
-            return f"{normalized},00"
-        if re.fullmatch(r"\d+,\d", normalized):
-            return f"{normalized}0"
-        if not re.fullmatch(r"\d+,\d{2}", normalized):
-            raise ValueError("Informe o valor no formato 50,00.")
-        return normalized
+    def validar_eventos_unicos(cls, eventos: list[RequerimentoEventoIn]) -> list[RequerimentoEventoIn]:
+        chaves = {(e.tipo_evento, e.ano) for e in eventos}
+        if len(chaves) != len(eventos):
+            raise ValueError("Há eventos duplicados (mesmo tipo e ano).")
+        return eventos
 
 
 class RequerimentoCreate(RequerimentoBase):
@@ -105,6 +87,7 @@ class RequerimentoPublic(RequerimentoBase):
     criado_em: datetime
     atualizado_em: datetime
     policial: PolicialPublic
+    eventos: list[RequerimentoEventoPublic]
 
 
 class RequerimentoEnviadoCp(BaseModel):

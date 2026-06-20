@@ -1,21 +1,37 @@
 from uuid import UUID
 
 from sqlalchemy import String, case, func, or_, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.constants import POSTO_ORDEM
 from app.models.policial import PolicialMilitar
 from app.models.requerimento import Requerimento
+from app.models.requerimento_evento import RequerimentoEvento
 from app.schemas.requerimento import RequerimentoCreate, RequerimentoUpdate
 
 
 def get_requerimento(db: Session, requerimento_id: UUID) -> Requerimento | None:
     stmt = (
         select(Requerimento)
-        .options(joinedload(Requerimento.policial))
+        .options(
+            joinedload(Requerimento.policial),
+            selectinload(Requerimento.eventos),
+        )
         .where(Requerimento.id == requerimento_id)
     )
     return db.scalar(stmt)
+
+
+def _eventos_models(data: RequerimentoCreate | RequerimentoUpdate) -> list[RequerimentoEvento]:
+    return [
+        RequerimentoEvento(
+            tipo_evento=e.tipo_evento,
+            ano=e.ano,
+            data_recebido=e.data_recebido,
+            valor_auxilio_saude=e.valor_auxilio_saude,
+        )
+        for e in data.eventos
+    ]
 
 
 def get_requerimento_by_processo_sei(
@@ -47,7 +63,9 @@ def list_requerimentos(
             )
         )
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    stmt = stmt.options(joinedload(Requerimento.policial)).order_by(
+    stmt = stmt.options(
+        joinedload(Requerimento.policial), selectinload(Requerimento.eventos)
+    ).order_by(
         hierarchy.asc(),
         Requerimento.data_recebimento_opm.asc(),
         Requerimento.hora_recebimento_opm.asc(),
@@ -70,7 +88,9 @@ def count_by_posto(db: Session) -> dict[str, int]:
 
 
 def create_requerimento(db: Session, data: RequerimentoCreate) -> Requerimento:
-    requerimento = Requerimento(**data.model_dump())
+    payload = data.model_dump(exclude={"eventos"})
+    requerimento = Requerimento(**payload)
+    requerimento.eventos = _eventos_models(data)
     db.add(requerimento)
     db.commit()
     db.refresh(requerimento)
@@ -80,8 +100,10 @@ def create_requerimento(db: Session, data: RequerimentoCreate) -> Requerimento:
 def update_requerimento(
     db: Session, requerimento: Requerimento, data: RequerimentoUpdate
 ) -> Requerimento:
-    for field, value in data.model_dump().items():
+    for field, value in data.model_dump(exclude={"eventos"}).items():
         setattr(requerimento, field, value)
+    # substitui os eventos (cascade delete-orphan remove os antigos)
+    requerimento.eventos = _eventos_models(data)
     db.commit()
     db.refresh(requerimento)
     return get_requerimento(db, requerimento.id) or requerimento

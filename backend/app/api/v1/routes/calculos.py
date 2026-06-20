@@ -30,9 +30,17 @@ def _get_requerimento(db: DbSession, requerimento_id: UUID) -> Requerimento:
 def _calcular(db: DbSession, requerimento: Requerimento, dados: CalculoIn):
     parametros = parametros_crud.load_parametros_map(db)
     indices = parametros_crud.load_indices_map(db)
+    # Lançamentos derivados dos eventos do requerimento; o tipo de auxílio saúde
+    # é derivado do valor (==50 -> SAUDE, senão CONDICIONAL). Eventos legados sem
+    # valor são ignorados (não há como determinar o tipo).
     lancamentos = [
-        service.LancamentoInput(l.data_recebido, l.tipo_evento, l.tipo_auxilio_saude)
-        for l in dados.lancamentos
+        service.LancamentoInput(
+            e.data_recebido,
+            e.tipo_evento,
+            service.tipo_auxilio_from_valor(e.valor_auxilio_saude),
+        )
+        for e in requerimento.eventos
+        if e.valor_auxilio_saude is not None
     ]
     afastamentos = [
         service.AfastamentoInput(a.modalidade, a.data_inicio, a.data_fim)

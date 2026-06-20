@@ -115,6 +115,16 @@ class ResultadoCalculo:
 # --------------------------------------------------------------------------- #
 # Funções puras de cálculo
 # --------------------------------------------------------------------------- #
+def tipo_auxilio_from_valor(valor: Decimal | None) -> str:
+    """Deriva o tipo de auxílio saúde a partir do valor recebido no mês.
+
+    Regra: valor == 50 -> SAUDE; qualquer outro valor -> CONDICIONAL.
+    """
+    if valor is not None and Decimal(valor) == Decimal(50):
+        return C.AUX_SAUDE
+    return C.AUX_CONDICIONAL
+
+
 def avos_periodo(inicio: date, fim: date) -> int:
     """Avos de um período contínuo, com a regra do dia 15 (aba Afastamentos, col M).
 

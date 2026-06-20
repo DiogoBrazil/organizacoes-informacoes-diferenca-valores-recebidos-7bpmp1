@@ -61,7 +61,8 @@ class CalculoAfastamentoIn(BaseModel):
 
 
 class CalculoIn(BaseModel):
-    lancamentos: list[CalculoLancamentoIn] = []
+    # Os lançamentos (abono/1/3/13º) são derivados dos eventos do requerimento;
+    # aqui o operador informa apenas os afastamentos.
     afastamentos: list[CalculoAfastamentoIn] = []
 
 

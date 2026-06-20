@@ -80,6 +80,27 @@ def test_fator_competencia_alem_da_data_base_e_um():
 
 
 # --------------------------------------------------------------------------- #
+# Tipo de auxílio saúde derivado do valor (==50 -> SAUDE, senão CONDICIONAL)
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    "valor,esperado",
+    [
+        ("50", C.AUX_SAUDE),
+        ("50.00", C.AUX_SAUDE),
+        ("150", C.AUX_CONDICIONAL),
+        ("150.00", C.AUX_CONDICIONAL),
+        ("75.50", C.AUX_CONDICIONAL),
+    ],
+)
+def test_tipo_auxilio_from_valor(valor, esperado):
+    assert cs.tipo_auxilio_from_valor(Decimal(valor)) == esperado
+
+
+def test_tipo_auxilio_from_valor_none_e_condicional():
+    assert cs.tipo_auxilio_from_valor(None) == C.AUX_CONDICIONAL
+
+
+# --------------------------------------------------------------------------- #
 # Cenário completo da planilha (sem afastamento)
 # --------------------------------------------------------------------------- #
 def test_total_geral_bate_planilha():

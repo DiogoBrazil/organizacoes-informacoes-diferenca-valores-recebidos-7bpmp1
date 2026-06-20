@@ -37,6 +37,20 @@ export interface Policial {
   opm: string;
 }
 
+export interface RequerimentoEvento {
+  tipo_evento: TipoEvento;
+  ano: number;
+  data_recebido: string;
+  valor_auxilio_saude: number | string | null;
+}
+
+export interface RequerimentoEventoInput {
+  tipo_evento: TipoEvento;
+  ano: number;
+  data_recebido: string;
+  valor_auxilio_saude: string;
+}
+
 export interface Requerimento {
   id: string;
   policial_id: string;
@@ -48,22 +62,7 @@ export interface Requerimento {
   gozou_ferias_5_anos: boolean;
   tem_prioridade_legal: boolean;
   enviado_para_cp: boolean;
-  abono_pecuniario_2021?: string | null;
-  ferias_1_3_2021?: string | null;
-  abono_pecuniario_2022?: string | null;
-  ferias_1_3_2022?: string | null;
-  abono_pecuniario_2023?: string | null;
-  ferias_1_3_2023?: string | null;
-  abono_pecuniario_2024?: string | null;
-  ferias_1_3_2024?: string | null;
-  abono_pecuniario_2025?: string | null;
-  ferias_1_3_2025?: string | null;
-  auxilio_saude_2021?: string | null;
-  auxilio_saude_2022?: string | null;
-  auxilio_saude_2023?: string | null;
-  auxilio_saude_2024?: string | null;
-  auxilio_saude_2025?: string | null;
-  auxilio_saude_2026?: string | null;
+  eventos: RequerimentoEvento[];
   criado_em: string;
   atualizado_em: string;
   policial: Policial;
@@ -71,8 +70,8 @@ export interface Requerimento {
 
 export type RequerimentoPayload = Omit<
   Requerimento,
-  "id" | "criado_em" | "atualizado_em" | "policial"
->;
+  "id" | "criado_em" | "atualizado_em" | "policial" | "eventos"
+> & { eventos: RequerimentoEventoInput[] };
 
 export interface ApiError {
   detail?: string;
@@ -109,7 +108,7 @@ export interface CalculoAfastamentoInput {
 }
 
 export interface CalculoIn {
-  lancamentos: CalculoLancamentoInput[];
+  // Lançamentos vêm dos eventos do requerimento; aqui só os afastamentos.
   afastamentos: CalculoAfastamentoInput[];
 }
 

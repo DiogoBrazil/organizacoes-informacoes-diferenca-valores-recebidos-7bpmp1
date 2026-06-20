@@ -11,9 +11,6 @@ import { exportRequerimentoIndividualPdf } from "../services/exporters";
 import { currencyWithSymbol, displayText, formatDate, formatTime } from "../services/requerimentoColumns";
 import type { Requerimento } from "../types";
 
-const anosAbono = [2021, 2022, 2023, 2024, 2025] as const;
-const anosSaude = [2021, 2022, 2023, 2024, 2025, 2026] as const;
-
 function DetailSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded border border-slate-200 bg-white p-5 shadow-sm">
@@ -127,43 +124,49 @@ export default function RequerimentoViewPage() {
           </dl>
         </DetailSection>
 
-        <DetailSection title="Abono Pecuniario e 1/3 ferias por ano">
+        <DetailSection title="Eventos (Abono, 1/3 de Férias e 13º)">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] border-collapse text-center text-sm">
+            <table className="w-full min-w-[640px] border-collapse text-center text-sm">
               <thead className="bg-slate-100 text-gov-muted">
                 <tr>
-                  <th className="border border-slate-300 px-3 py-2">Ano</th>
-                  <th className="border border-slate-300 px-3 py-2">Abono Pecuniario</th>
-                  <th className="border border-slate-300 px-3 py-2">1/3 ferias</th>
+                  <th className="border border-slate-300 px-3 py-2">Ano ref.</th>
+                  <th className="border border-slate-300 px-3 py-2">Evento</th>
+                  <th className="border border-slate-300 px-3 py-2">Data de recebimento</th>
+                  <th className="border border-slate-300 px-3 py-2">Auxílio Saúde</th>
                 </tr>
               </thead>
               <tbody>
-                {anosAbono.map((ano) => (
-                  <tr key={ano}>
-                    <td className="border border-slate-300 px-3 py-2 font-semibold">{ano}</td>
-                    <td className="border border-slate-300 px-3 py-2">
-                      {displayText(requerimento[`abono_pecuniario_${ano}`])}
-                    </td>
-                    <td className="border border-slate-300 px-3 py-2">
-                      {displayText(requerimento[`ferias_1_3_${ano}`])}
+                {[...requerimento.eventos]
+                  .sort((a, b) => a.ano - b.ano || a.tipo_evento.localeCompare(b.tipo_evento))
+                  .map((evento) => (
+                    <tr key={`${evento.tipo_evento}-${evento.ano}`}>
+                      <td className="border border-slate-300 px-3 py-2 font-semibold">{evento.ano}</td>
+                      <td className="border border-slate-300 px-3 py-2">{evento.tipo_evento}</td>
+                      <td className="border border-slate-300 px-3 py-2">
+                        {formatDate(evento.data_recebido)}
+                      </td>
+                      <td className="border border-slate-300 px-3 py-2">
+                        {evento.valor_auxilio_saude !== null && evento.valor_auxilio_saude !== ""
+                          ? currencyWithSymbol(
+                              Number(evento.valor_auxilio_saude).toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })
+                            )
+                          : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                {!requerimento.eventos.length ? (
+                  <tr>
+                    <td colSpan={4} className="border border-slate-300 px-3 py-6 text-gov-muted">
+                      Nenhum evento cadastrado.
                     </td>
                   </tr>
-                ))}
+                ) : null}
               </tbody>
             </table>
           </div>
-        </DetailSection>
-
-        <DetailSection title="Auxilio Saúde por ano">
-          <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {anosSaude.map((ano) => (
-              <DetailItem
-                key={ano}
-                label={`Auxilio Saúde ${ano}`}
-                value={currencyWithSymbol(requerimento[`auxilio_saude_${ano}`])}
-              />
-            ))}
-          </dl>
         </DetailSection>
       </div>
     </>

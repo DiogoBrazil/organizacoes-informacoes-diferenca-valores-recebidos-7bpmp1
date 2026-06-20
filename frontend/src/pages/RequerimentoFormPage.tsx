@@ -8,19 +8,31 @@ import PageHeader from "../components/PageHeader";
 import { useLoader } from "../context/LoaderContext";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
+import { maskSeiProcess, normalizeCurrency, parseTotalCount } from "../services/masks";
 import {
-  maskSeiProcess,
-  normalizeCurrency,
-  normalizeMonthYear,
-  parseTotalCount,
-} from "../services/masks";
-import type { Policial, Requerimento, RequerimentoPayload } from "../types";
+  type Policial,
+  type Requerimento,
+  type RequerimentoEventoInput,
+  type RequerimentoPayload,
+  type TipoEvento,
+} from "../types";
 
-const anosAbono = [2021, 2022, 2023, 2024, 2025] as const;
-const anosSaude = [2021, 2022, 2023, 2024, 2025, 2026] as const;
+const anosEvento = [2021, 2022, 2023, 2024, 2025, 2026] as const;
+const tiposEvento: { tipo: TipoEvento; label: string }[] = [
+  { tipo: "ABONO", label: "Abono Pecuniário" },
+  { tipo: "1/3-FÉRIAS", label: "1/3 de Férias" },
+  { tipo: "13º", label: "13º Salário" },
+];
 const PER_PAGE = 10;
 
-const initialForm: RequerimentoPayload = {
+type EventoCelula = { data: string; valor: string };
+type EventosGrid = Record<string, EventoCelula>;
+
+const chaveEvento = (tipo: TipoEvento, ano: number) => `${tipo}|${ano}`;
+
+type FormScalars = Omit<RequerimentoPayload, "eventos">;
+
+const initialForm: FormScalars = {
   policial_id: "",
   num_processo_sei_requerimento: "",
   data_recebimento_opm: "",
@@ -30,23 +42,19 @@ const initialForm: RequerimentoPayload = {
   gozou_ferias_5_anos: false,
   tem_prioridade_legal: false,
   enviado_para_cp: false,
-  abono_pecuniario_2021: "",
-  ferias_1_3_2021: "",
-  abono_pecuniario_2022: "",
-  ferias_1_3_2022: "",
-  abono_pecuniario_2023: "",
-  ferias_1_3_2023: "",
-  abono_pecuniario_2024: "",
-  ferias_1_3_2024: "",
-  abono_pecuniario_2025: "",
-  ferias_1_3_2025: "",
-  auxilio_saude_2021: "",
-  auxilio_saude_2022: "",
-  auxilio_saude_2023: "",
-  auxilio_saude_2024: "",
-  auxilio_saude_2025: "",
-  auxilio_saude_2026: "",
 };
+
+function valorParaInput(valor: number | string | null): string {
+  if (valor === null || valor === undefined || valor === "") return "";
+  return Number(valor).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function valorParaApi(valor: string): string {
+  return valor.replace(/\./g, "").replace(",", ".");
+}
 
 function FieldSection({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -68,7 +76,8 @@ export default function RequerimentoFormPage() {
   const [policiais, setPoliciais] = useState<Policial[]>([]);
   const [buscaPolicial, setBuscaPolicial] = useState("");
   const [mostrarBuscaPolicial, setMostrarBuscaPolicial] = useState(false);
-  const [form, setForm] = useState<RequerimentoPayload>(initialForm);
+  const [form, setForm] = useState<FormScalars>(initialForm);
+  const [eventos, setEventos] = useState<EventosGrid>({});
 
   const policialSelecionado = useMemo(
     () => policiais.find((policial) => policial.id === form.policial_id),
@@ -124,23 +133,15 @@ export default function RequerimentoFormPage() {
             gozou_ferias_5_anos: requerimento.gozou_ferias_5_anos,
             tem_prioridade_legal: requerimento.tem_prioridade_legal,
             enviado_para_cp: requerimento.enviado_para_cp,
-            abono_pecuniario_2021: requerimento.abono_pecuniario_2021 ?? "",
-            ferias_1_3_2021: requerimento.ferias_1_3_2021 ?? "",
-            abono_pecuniario_2022: requerimento.abono_pecuniario_2022 ?? "",
-            ferias_1_3_2022: requerimento.ferias_1_3_2022 ?? "",
-            abono_pecuniario_2023: requerimento.abono_pecuniario_2023 ?? "",
-            ferias_1_3_2023: requerimento.ferias_1_3_2023 ?? "",
-            abono_pecuniario_2024: requerimento.abono_pecuniario_2024 ?? "",
-            ferias_1_3_2024: requerimento.ferias_1_3_2024 ?? "",
-            abono_pecuniario_2025: requerimento.abono_pecuniario_2025 ?? "",
-            ferias_1_3_2025: requerimento.ferias_1_3_2025 ?? "",
-            auxilio_saude_2021: requerimento.auxilio_saude_2021 ?? "",
-            auxilio_saude_2022: requerimento.auxilio_saude_2022 ?? "",
-            auxilio_saude_2023: requerimento.auxilio_saude_2023 ?? "",
-            auxilio_saude_2024: requerimento.auxilio_saude_2024 ?? "",
-            auxilio_saude_2025: requerimento.auxilio_saude_2025 ?? "",
-            auxilio_saude_2026: requerimento.auxilio_saude_2026 ?? "",
           });
+          const grid: EventosGrid = {};
+          for (const ev of requerimento.eventos) {
+            grid[chaveEvento(ev.tipo_evento, ev.ano)] = {
+              data: ev.data_recebido,
+              valor: valorParaInput(ev.valor_auxilio_saude),
+            };
+          }
+          setEventos(grid);
           setBuscaPolicial(
             `${requerimento.policial.matricula} - ${requerimento.policial.nome_completo}`
           );
@@ -154,8 +155,16 @@ export default function RequerimentoFormPage() {
     void carregar();
   }, [editando, id, showToast]);
 
-  function updateField<K extends keyof RequerimentoPayload>(key: K, value: RequerimentoPayload[K]) {
+  function updateField<K extends keyof FormScalars>(key: K, value: FormScalars[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateEvento(tipo: TipoEvento, ano: number, campo: keyof EventoCelula, value: string) {
+    const chave = chaveEvento(tipo, ano);
+    setEventos((current) => {
+      const atual = current[chave] ?? { data: "", valor: "" };
+      return { ...current, [chave]: { ...atual, [campo]: value } };
+    });
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -168,13 +177,36 @@ export default function RequerimentoFormPage() {
       showToast("Informe o processo SEI no formato 0000.000000/0000-00.", "error");
       return;
     }
+
+    const eventosPayload: RequerimentoEventoInput[] = [];
+    for (const { tipo } of tiposEvento) {
+      for (const ano of anosEvento) {
+        const celula = eventos[chaveEvento(tipo, ano)];
+        if (!celula || !celula.data) continue;
+        if (!celula.valor) {
+          showToast(
+            `Informe o valor do auxílio saúde do evento ${tipo} de ${ano}.`,
+            "error"
+          );
+          return;
+        }
+        eventosPayload.push({
+          tipo_evento: tipo,
+          ano,
+          data_recebido: celula.data,
+          valor_auxilio_saude: valorParaApi(celula.valor),
+        });
+      }
+    }
+
+    const payload: RequerimentoPayload = { ...form, eventos: eventosPayload };
     setSaving(true);
     try {
       await withLoader(async () => {
         if (editando) {
-          await api.put(`/requerimentos/${id}`, form);
+          await api.put(`/requerimentos/${id}`, payload);
         } else {
-          await api.post("/requerimentos", form);
+          await api.post("/requerimentos", payload);
         }
       }, editando ? "Atualizando..." : "Salvando...");
       showToast(
@@ -319,12 +351,9 @@ export default function RequerimentoFormPage() {
               <label key={key} className="block">
                 <span className="text-sm font-semibold">{label}</span>
                 <select
-                  value={form[key as keyof RequerimentoPayload] ? "SIM" : "NÃO"}
+                  value={form[key as keyof FormScalars] ? "SIM" : "NÃO"}
                   onChange={(event) =>
-                    updateField(
-                      key as keyof RequerimentoPayload,
-                      (event.target.value === "SIM") as never
-                    )
+                    updateField(key as keyof FormScalars, (event.target.value === "SIM") as never)
                   }
                   className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
                 >
@@ -336,58 +365,50 @@ export default function RequerimentoFormPage() {
           </div>
         </FieldSection>
 
-        <FieldSection title="Abono Pecuniário e 1/3 de Férias por Ano">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            {anosAbono.map((ano) => (
+        <FieldSection title="Eventos por Ano">
+          <p className="mb-4 text-sm text-gov-muted">
+            O ano do card é o ano de <strong>referência</strong> do evento. Informe a
+            <strong> data de recebimento</strong> (pagamento, que pode ser em outro ano) e o
+            valor do auxílio saúde daquele mês (50,00 = Auxílio Saúde; demais = Condicional).
+            Deixe em branco os eventos não recebidos.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {anosEvento.map((ano) => (
               <div key={ano} className="rounded border border-slate-200 p-3">
                 <h4 className="font-bold">{ano}</h4>
-                <label className="mt-3 block">
-                  <span className="text-sm font-semibold">Abono Pecuniário</span>
-                  <input
-                    value={(form[`abono_pecuniario_${ano}` as keyof RequerimentoPayload] as string) ?? ""}
-                    onChange={(event) =>
-                      updateField(`abono_pecuniario_${ano}` as keyof RequerimentoPayload, normalizeMonthYear(event.target.value) as never)
-                    }
-                    placeholder="ex: out/2022"
-                    maxLength={8}
-                    className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
-                  />
-                </label>
-                <label className="mt-3 block">
-                  <span className="text-sm font-semibold">1/3 de Férias</span>
-                  <input
-                    value={(form[`ferias_1_3_${ano}` as keyof RequerimentoPayload] as string) ?? ""}
-                    onChange={(event) =>
-                      updateField(`ferias_1_3_${ano}` as keyof RequerimentoPayload, normalizeMonthYear(event.target.value) as never)
-                    }
-                    placeholder="ex: out/2022"
-                    maxLength={8}
-                    className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
-                  />
-                </label>
+                {tiposEvento.map(({ tipo, label }) => {
+                  const celula = eventos[chaveEvento(tipo, ano)] ?? { data: "", valor: "" };
+                  return (
+                    <div key={tipo} className="mt-3 border-t border-slate-100 pt-3 first:border-t-0 first:pt-0">
+                      <span className="text-sm font-semibold">{label}</span>
+                      <div className="mt-1 grid grid-cols-2 gap-2">
+                        <input
+                          type="date"
+                          min="2021-01-01"
+                          max="2026-12-31"
+                          value={celula.data}
+                          onChange={(event) => updateEvento(tipo, ano, "data", event.target.value)}
+                          className="focus-ring w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                          title="Data de recebimento (pagamento)"
+                        />
+                        <input
+                          value={celula.valor}
+                          onChange={(event) =>
+                            updateEvento(tipo, ano, "valor", event.target.value.replace(/[^\d,]/g, ""))
+                          }
+                          onBlur={(event) =>
+                            updateEvento(tipo, ano, "valor", normalizeCurrency(event.target.value))
+                          }
+                          placeholder="Aux. saúde (ex: 50,00)"
+                          inputMode="decimal"
+                          className="focus-ring w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+                          title="Valor do auxílio saúde"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        </FieldSection>
-
-        <FieldSection title="Auxílio Saúde por Ano">
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-            {anosSaude.map((ano) => (
-              <label key={ano} className="block">
-                <span className="text-sm font-semibold">{ano}</span>
-                <input
-                  value={(form[`auxilio_saude_${ano}` as keyof RequerimentoPayload] as string) ?? ""}
-                  onChange={(event) =>
-                    updateField(`auxilio_saude_${ano}` as keyof RequerimentoPayload, event.target.value.replace(/[^\d,]/g, "") as never)
-                  }
-                  onBlur={(event) =>
-                    updateField(`auxilio_saude_${ano}` as keyof RequerimentoPayload, normalizeCurrency(event.target.value) as never)
-                  }
-                  placeholder="ex: 50,00"
-                  inputMode="decimal"
-                  className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
-                />
-              </label>
             ))}
           </div>
         </FieldSection>

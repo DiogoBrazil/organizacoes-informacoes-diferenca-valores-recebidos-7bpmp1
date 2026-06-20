@@ -6,7 +6,6 @@ import logo7Bpm from "../assets/images/logo-7bpm.png";
 import type { Calculo, PostoGraduacao, Requerimento } from "../types";
 import {
   currencyWithSymbol,
-  displayText,
   formatDate,
   formatTime,
   requerimentoReportBody,
@@ -255,26 +254,28 @@ export async function exportRequerimentoIndividualPdf(requerimento: Requerimento
     y + 10
   );
 
-  y = addPdfTable(
-    doc,
-    "Abono Pecuniario e 1/3 ferias por ano",
-    ["Ano", "Abono Pecuniario", "1/3 ferias"],
-    [2021, 2022, 2023, 2024, 2025].map((ano) => [
-      ano,
-      displayText(requerimento[`abono_pecuniario_${ano}` as keyof Requerimento] as string | null),
-      displayText(requerimento[`ferias_1_3_${ano}` as keyof Requerimento] as string | null),
-    ]),
-    y + 10
+  const eventosOrdenados = [...(requerimento.eventos ?? [])].sort(
+    (a, b) => a.ano - b.ano || a.tipo_evento.localeCompare(b.tipo_evento)
   );
-
   addPdfTable(
     doc,
-    "Auxilio Saúde por ano",
-    ["Ano", "Valor"],
-    [2021, 2022, 2023, 2024, 2025, 2026].map((ano) => [
-      ano,
-      currencyWithSymbol(requerimento[`auxilio_saude_${ano}` as keyof Requerimento] as string | null),
-    ]),
+    "Eventos (Abono, 1/3 de Férias e 13º)",
+    ["Ano ref.", "Evento", "Data de recebimento", "Auxílio Saúde"],
+    eventosOrdenados.length
+      ? eventosOrdenados.map((evento) => [
+          evento.ano,
+          evento.tipo_evento,
+          formatDate(evento.data_recebido),
+          evento.valor_auxilio_saude !== null && evento.valor_auxilio_saude !== ""
+            ? currencyWithSymbol(
+                Number(evento.valor_auxilio_saude).toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })
+              )
+            : "-",
+        ])
+      : [["-", "-", "-", "-"]],
     y + 10
   );
 

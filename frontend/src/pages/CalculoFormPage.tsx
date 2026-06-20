@@ -18,28 +18,17 @@ import { exportCalculoExcel, exportCalculoPdf } from "../services/exporters";
 import { formatDate, formatTime } from "../services/requerimentoColumns";
 import {
   MODALIDADES_AFASTAMENTO,
-  TIPOS_AUX_SAUDE,
-  TIPOS_EVENTO,
   type Calculo,
   type CalculoAfastamentoInput,
   type CalculoIn,
-  type CalculoLancamentoInput,
   type Requerimento,
 } from "../types";
 
 const inputClass =
   "focus-ring w-full rounded border border-slate-300 px-2 py-1.5 text-sm";
 
-function novoLancamento(): CalculoLancamentoInput {
-  return { data_recebido: "", tipo_evento: "ABONO", tipo_auxilio_saude: "SAUDE" };
-}
-
 function novoAfastamento(): CalculoAfastamentoInput {
   return { modalidade: "LTIP", data_inicio: "", data_fim: "" };
-}
-
-function lancamentoCompleto(l: CalculoLancamentoInput) {
-  return Boolean(l.data_recebido && l.tipo_evento && l.tipo_auxilio_saude);
 }
 
 function afastamentoCompleto(a: CalculoAfastamentoInput) {
@@ -67,9 +56,6 @@ export default function CalculoFormPage() {
   const [saving, setSaving] = useState(false);
   const [persistido, setPersistido] = useState(false);
 
-  const [lancamentos, setLancamentos] = useState<CalculoLancamentoInput[]>([
-    novoLancamento(),
-  ]);
   const [afastamentos, setAfastamentos] = useState<CalculoAfastamentoInput[]>([]);
   const [calculo, setCalculo] = useState<Calculo | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -86,15 +72,6 @@ export default function CalculoFormPage() {
           const existente = await getCalculo(reqId);
           setPersistido(true);
           setCalculo(existente);
-          if (existente.lancamentos.length) {
-            setLancamentos(
-              existente.lancamentos.map((l) => ({
-                data_recebido: l.data_recebido,
-                tipo_evento: l.tipo_evento,
-                tipo_auxilio_saude: l.tipo_auxilio_saude,
-              }))
-            );
-          }
           setAfastamentos(
             existente.afastamentos.map((a) => ({
               modalidade: a.modalidade as CalculoAfastamentoInput["modalidade"],
@@ -103,7 +80,7 @@ export default function CalculoFormPage() {
             }))
           );
         } catch {
-          // sem cálculo salvo ainda — segue com formulário vazio
+          // sem cálculo salvo ainda — segue para a simulação inicial
         }
       } catch (error) {
         showToast(getErrorMessage(error), "error");
@@ -115,42 +92,26 @@ export default function CalculoFormPage() {
   }, [id, showToast]);
 
   const payload = useMemo<CalculoIn>(
-    () => ({
-      lancamentos: lancamentos.filter(lancamentoCompleto),
-      afastamentos: afastamentos.filter(afastamentoCompleto),
-    }),
-    [lancamentos, afastamentos]
+    () => ({ afastamentos: afastamentos.filter(afastamentoCompleto) }),
+    [afastamentos]
   );
 
-  // Prévia em tempo real: simula no backend (fonte da verdade), com debounce.
+  // Prévia em tempo real: os lançamentos vêm dos eventos do requerimento; aqui só
+  // os afastamentos influenciam. Simula a cada alteração (com debounce).
   useEffect(() => {
-    if (!id) return;
-    if (!payload.lancamentos.length) {
-      setCalculo(null);
-      return;
-    }
+    if (!id || loading) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        const resultado = await simularCalculo(id, payload);
-        setCalculo(resultado);
+        setCalculo(await simularCalculo(id, payload));
       } catch (error) {
         showToast(getErrorMessage(error), "error");
       }
-    }, 400);
+    }, 350);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [id, payload, showToast]);
-
-  const atualizarLancamento = useCallback(
-    (index: number, campo: keyof CalculoLancamentoInput, valor: string) => {
-      setLancamentos((prev) =>
-        prev.map((l, i) => (i === index ? { ...l, [campo]: valor } : l))
-      );
-    },
-    []
-  );
+  }, [id, loading, payload, showToast]);
 
   const atualizarAfastamento = useCallback(
     (index: number, campo: keyof CalculoAfastamentoInput, valor: string) => {
@@ -163,8 +124,11 @@ export default function CalculoFormPage() {
 
   async function handleSalvar() {
     if (!id) return;
-    if (!payload.lancamentos.length) {
-      showToast("Inclua ao menos um lançamento válido antes de salvar.", "error");
+    if (!calculo || !calculo.lancamentos.length) {
+      showToast(
+        "Não há lançamentos. Cadastre os eventos (abono/1/3/13º) no requerimento antes de salvar.",
+        "error"
+      );
       return;
     }
     setSaving(true);
@@ -200,13 +164,14 @@ export default function CalculoFormPage() {
 
   const voltarPara = `/requerimentos/${id}/visualizar`;
   const policial = requerimento.policial;
+  const semLancamentos = Boolean(calculo && !calculo.lancamentos.length);
 
   return (
     <>
       <PageHeader
         title="Cálculo da diferença"
         eyebrow="Abono · 1/3 férias · 13º"
-        subtitle="Lance os eventos e afastamentos; o cálculo é feito pelo servidor em tempo real."
+        subtitle="Os lançamentos vêm do requerimento; informe aqui apenas os afastamentos."
         icon={Calculator}
         actions={
           <Link to={voltarPara} className="btn btn-outline">
@@ -248,91 +213,78 @@ export default function CalculoFormPage() {
         ) : null}
       </Section>
 
-      <Section title="Lançamentos">
+      {semLancamentos ? (
+        <div className="mb-5 rounded border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+          Este requerimento não possui eventos (abono, 1/3 de férias ou 13º) com data e valor
+          de auxílio saúde cadastrados. Cadastre os eventos no requerimento para que o cálculo
+          seja gerado.
+        </div>
+      ) : null}
+
+      <Section title="Lançamentos (do requerimento)">
+        <p className="mb-3 text-sm text-gov-muted">
+          Derivados automaticamente dos eventos do requerimento. O tipo de auxílio saúde é
+          definido pelo valor recebido (50,00 = SAUDE; demais = CONDICIONAL).
+        </p>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="w-full min-w-[820px] border-collapse text-sm">
             <thead className="bg-slate-100 text-gov-muted">
               <tr>
-                <th className="border border-slate-300 px-2 py-2">#</th>
-                <th className="border border-slate-300 px-2 py-2">Data recebida</th>
-                <th className="border border-slate-300 px-2 py-2">Tipo de evento</th>
-                <th className="border border-slate-300 px-2 py-2">Tipo aux. saúde</th>
-                <th className="border border-slate-300 px-2 py-2">Ações</th>
+                <th className="border border-slate-300 px-2 py-2">Data</th>
+                <th className="border border-slate-300 px-2 py-2">Evento</th>
+                <th className="border border-slate-300 px-2 py-2">Aux. saúde</th>
+                <th className="border border-slate-300 px-2 py-2">Base</th>
+                <th className="border border-slate-300 px-2 py-2">IPCA-E</th>
+                <th className="border border-slate-300 px-2 py-2">Dif. original</th>
+                <th className="border border-slate-300 px-2 py-2">% aplic.</th>
+                <th className="border border-slate-300 px-2 py-2">Dif. ajustada</th>
+                <th className="border border-slate-300 px-2 py-2">Corrigido</th>
+                <th className="border border-slate-300 px-2 py-2">Prescrito</th>
               </tr>
             </thead>
             <tbody>
-              {lancamentos.map((l, index) => (
+              {(calculo?.lancamentos ?? []).map((l, index) => (
                 <tr key={index} className={index % 2 ? "bg-slate-50" : "bg-white"}>
                   <td className="border border-slate-300 px-2 py-1 text-center">
-                    {index + 1}
+                    {formatDate(l.data_recebido)}
                   </td>
-                  <td className="border border-slate-300 px-2 py-1">
-                    <input
-                      type="date"
-                      min="2021-01-01"
-                      max="2026-12-31"
-                      value={l.data_recebido}
-                      onChange={(e) =>
-                        atualizarLancamento(index, "data_recebido", e.target.value)
-                      }
-                      className={inputClass}
-                    />
+                  <td className="border border-slate-300 px-2 py-1">{l.tipo_evento}</td>
+                  <td className="border border-slate-300 px-2 py-1 text-center">
+                    {l.tipo_auxilio_saude}
                   </td>
-                  <td className="border border-slate-300 px-2 py-1">
-                    <select
-                      value={l.tipo_evento}
-                      onChange={(e) =>
-                        atualizarLancamento(index, "tipo_evento", e.target.value)
-                      }
-                      className={inputClass}
-                    >
-                      {TIPOS_EVENTO.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
+                  <td className="border border-slate-300 px-2 py-1 text-right">
+                    {formatBRL(l.base_complementar)}
                   </td>
-                  <td className="border border-slate-300 px-2 py-1">
-                    <select
-                      value={l.tipo_auxilio_saude}
-                      onChange={(e) =>
-                        atualizarLancamento(index, "tipo_auxilio_saude", e.target.value)
-                      }
-                      className={inputClass}
-                    >
-                      {TIPOS_AUX_SAUDE.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
+                  <td className="border border-slate-300 px-2 py-1 text-right">
+                    {formatFator(l.fator_correcao)}
+                  </td>
+                  <td className="border border-slate-300 px-2 py-1 text-right">
+                    {formatBRL(l.diferenca_original)}
                   </td>
                   <td className="border border-slate-300 px-2 py-1 text-center">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setLancamentos((prev) => prev.filter((_, i) => i !== index))
-                      }
-                      className="focus-ring rounded p-1.5 text-gov-danger hover:bg-red-50"
-                      title="Remover lançamento"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {Math.round(Number(l.percentual_aplicavel) * 100)}%
+                  </td>
+                  <td className="border border-slate-300 px-2 py-1 text-right">
+                    {formatBRL(l.diferenca_ajustada)}
+                  </td>
+                  <td className="border border-slate-300 px-2 py-1 text-right">
+                    {l.prescrito ? "---" : formatBRL(l.valor_corrigido_ajustado)}
+                  </td>
+                  <td className="border border-slate-300 px-2 py-1 text-center">
+                    {l.prescrito ? "SIM" : "NÃO"}
                   </td>
                 </tr>
               ))}
+              {!calculo?.lancamentos.length ? (
+                <tr>
+                  <td colSpan={10} className="border border-slate-300 px-2 py-4 text-center text-gov-muted">
+                    Nenhum lançamento.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
-        <button
-          type="button"
-          onClick={() => setLancamentos((prev) => [...prev, novoLancamento()])}
-          className="btn btn-outline mt-3"
-        >
-          <Plus className="h-4 w-4" />
-          Adicionar lançamento
-        </button>
       </Section>
 
       <Section title="Afastamentos">
@@ -378,9 +330,7 @@ export default function CalculoFormPage() {
                     <input
                       type="date"
                       value={a.data_fim}
-                      onChange={(e) =>
-                        atualizarAfastamento(index, "data_fim", e.target.value)
-                      }
+                      onChange={(e) => atualizarAfastamento(index, "data_fim", e.target.value)}
                       className={inputClass}
                     />
                   </td>
@@ -400,10 +350,7 @@ export default function CalculoFormPage() {
               ))}
               {!afastamentos.length ? (
                 <tr>
-                  <td
-                    colSpan={4}
-                    className="border border-slate-300 px-2 py-4 text-center text-gov-muted"
-                  >
+                  <td colSpan={4} className="border border-slate-300 px-2 py-4 text-center text-gov-muted">
                     Nenhum afastamento registrado.
                   </td>
                 </tr>
@@ -421,7 +368,7 @@ export default function CalculoFormPage() {
         </button>
       </Section>
 
-      {calculo ? (
+      {calculo && calculo.resumo.length ? (
         <Section title="Resumo calculado">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] border-collapse text-sm">
@@ -494,13 +441,12 @@ export default function CalculoFormPage() {
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 pt-5">
         {persistido ? (
           <span className="mr-auto text-sm text-gov-muted">
-            Cálculo salvo (snapshot congelado). Use “Salvar” para recalcular e
-            sobrescrever.
+            Cálculo salvo (snapshot congelado). Use “Salvar” para recalcular e sobrescrever.
           </span>
         ) : null}
         <button
           type="button"
-          disabled={!calculo}
+          disabled={!calculo || semLancamentos}
           onClick={() => handleExport("pdf")}
           className="btn btn-outline"
         >
@@ -509,7 +455,7 @@ export default function CalculoFormPage() {
         </button>
         <button
           type="button"
-          disabled={!calculo}
+          disabled={!calculo || semLancamentos}
           onClick={() => handleExport("xlsx")}
           className="btn btn-outline"
         >
@@ -518,7 +464,7 @@ export default function CalculoFormPage() {
         </button>
         <button
           type="button"
-          disabled={saving}
+          disabled={saving || semLancamentos}
           onClick={handleSalvar}
           className="btn btn-primary"
         >
