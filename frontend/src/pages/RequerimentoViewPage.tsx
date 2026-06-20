@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, Edit } from "lucide-react";
+import { ArrowLeft, Calculator, Download, Edit } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -84,6 +84,10 @@ export default function RequerimentoViewPage() {
           <Edit className="h-4 w-4" />
           Editar
         </Link>
+        <Link to={`/requerimentos/${requerimento.id}/calculo`} className="btn btn-primary">
+          <Calculator className="h-4 w-4" />
+          Cálculo da diferença
+        </Link>
         <button
           type="button"
           onClick={handleGerarPdf}
@@ -110,6 +114,7 @@ export default function RequerimentoViewPage() {
             <DetailItem label="Posto/Graduação" value={requerimento.policial.posto_graduacao} />
             <DetailItem label="Nome" value={requerimento.policial.nome_completo} />
             <DetailItem label="RE" value={requerimento.policial.matricula} />
+            <DetailItem label="OPM" value={displayText(requerimento.policial.opm)} />
           </dl>
         </DetailSection>
 

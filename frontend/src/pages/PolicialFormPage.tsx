@@ -23,6 +23,7 @@ export default function PolicialFormPage() {
     posto_graduacao: "SD PM" as PostoGraduacao,
     matricula: "",
     nome_completo: "",
+    opm: "7º BPM",
   });
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function PolicialFormPage() {
           posto_graduacao: data.posto_graduacao,
           matricula: String(data.matricula),
           nome_completo: data.nome_completo,
+          opm: data.opm ?? "7º BPM",
         });
       } catch (error) {
         showToast(getErrorMessage(error), "error");
@@ -50,11 +52,16 @@ export default function PolicialFormPage() {
       showToast("A matrícula deve ter 9 dígitos e iniciar com 1000.", "error");
       return;
     }
+    if (form.opm.trim().length < 2) {
+      showToast("Informe a OPM do policial.", "error");
+      return;
+    }
     setSaving(true);
     const payload = {
       posto_graduacao: form.posto_graduacao,
       matricula: Number(form.matricula),
       nome_completo: form.nome_completo,
+      opm: form.opm.trim(),
     };
     try {
       await withLoader(async () => {
@@ -80,7 +87,7 @@ export default function PolicialFormPage() {
       <PageHeader
         title={editando ? "Editar Policial Militar" : "Adicionar Policial Militar"}
         eyebrow={editando ? "Efetivo · edição" : "Efetivo · novo cadastro"}
-        subtitle="Informe posto, matrícula e nome completo do requerente."
+        subtitle="Informe posto, matrícula, nome completo e OPM do requerente."
         icon={Shield}
       />
       <form onSubmit={handleSubmit} className="surface-card p-5 sm:p-6">
@@ -122,6 +129,18 @@ export default function PolicialFormPage() {
               onChange={(event) => setForm({ ...form, nome_completo: event.target.value })}
               required
               minLength={3}
+              className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            />
+          </label>
+          <label className="block md:col-span-1">
+            <span className="text-sm font-semibold">OPM</span>
+            <input
+              value={form.opm}
+              onChange={(event) => setForm({ ...form, opm: event.target.value })}
+              required
+              minLength={2}
+              maxLength={60}
+              placeholder="7º BPM"
               className="focus-ring mt-1 w-full rounded border border-slate-300 px-3 py-2"
             />
           </label>

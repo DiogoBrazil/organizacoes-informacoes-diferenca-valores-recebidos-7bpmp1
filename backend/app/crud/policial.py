@@ -50,6 +50,7 @@ def create_policial(db: Session, data: PolicialCreate) -> PolicialMilitar:
         posto_graduacao=data.posto_graduacao,
         matricula=data.matricula,
         nome_completo=data.nome_completo.strip(),
+        opm=data.opm.strip(),
     )
     db.add(policial)
     db.commit()
@@ -61,6 +62,7 @@ def update_policial(db: Session, policial: PolicialMilitar, data: PolicialUpdate
     policial.posto_graduacao = data.posto_graduacao
     policial.matricula = data.matricula
     policial.nome_completo = data.nome_completo.strip()
+    policial.opm = data.opm.strip()
     db.commit()
     db.refresh(policial)
     return policial

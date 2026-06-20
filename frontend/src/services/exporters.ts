@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx-js-style";
 
 import logo7Bpm from "../assets/images/logo-7bpm.png";
-import type { PostoGraduacao, Requerimento } from "../types";
+import type { Calculo, PostoGraduacao, Requerimento } from "../types";
 import {
   currencyWithSymbol,
   displayText,
@@ -239,6 +239,7 @@ export async function exportRequerimentoIndividualPdf(requerimento: Requerimento
       ["Posto/Graduação", requerimento.policial.posto_graduacao],
       ["Nome", requerimento.policial.nome_completo],
       ["RE", requerimento.policial.matricula],
+      ["OPM", requerimento.policial.opm],
     ],
     y + 10
   );
@@ -392,4 +393,319 @@ export function exportRequerimentosExcel(posto: PostoGraduacao, requerimentos: R
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Requerimentos");
   XLSX.writeFile(workbook, `requerimentos_${postoForFile(posto)}_${todayForFile()}.xlsx`);
+}
+
+// ---- Exportação do cálculo de diferenças -----------------------------------
+// Campos Decimal chegam da API como string; coagimos para número ao formatar.
+function brl(value: number | string) {
+  return Number(value).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function fator8(value: number | string) {
+  return Number(value).toLocaleString("pt-BR", {
+    minimumFractionDigits: 8,
+    maximumFractionDigits: 8,
+  });
+}
+
+function pct(value: number | string) {
+  return `${Math.round(Number(value) * 100)}%`;
+}
+
+function mesAno(isoDate: string) {
+  const [ano, mes] = isoDate.split("-");
+  return `${mes}/${ano}`;
+}
+
+function calculoFileBase(requerimento: Requerimento) {
+  return safeFileName(
+    `calculo_${requerimento.policial.matricula}_${requerimento.policial.nome_completo}`
+  );
+}
+
+const ANOS_AFASTAMENTO = [2021, 2022, 2023, 2024, 2025, 2026] as const;
+
+export async function exportCalculoPdf(requerimento: Requerimento, calculo: Calculo) {
+  const doc = new jsPDF({ orientation: "landscape", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const logoDataUrl = await imageUrlToDataUrl(logo7Bpm);
+  const generatedAt = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date());
+
+  doc.addImage(logoDataUrl, "PNG", 14, 10, 22, 22);
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("POLÍCIA MILITAR DO ESTADO DE RONDÔNIA - PMRO", 42, 17);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(
+    "Cálculo de diferenças — abono pecuniário, 1/3 de férias e 13º",
+    42,
+    24
+  );
+  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(8);
+  doc.text(`Gerado em: ${generatedAt}`, 42, 30);
+  doc.setDrawColor(19, 81, 180);
+  doc.setLineWidth(0.6);
+  doc.line(14, 35, pageWidth - 14, 35);
+
+  let y = addPdfSection(
+    doc,
+    "Identificação",
+    [
+      ["Nome", requerimento.policial.nome_completo],
+      ["Posto/Graduação", requerimento.policial.posto_graduacao],
+      ["Matrícula", requerimento.policial.matricula],
+      ["OPM", requerimento.policial.opm],
+      ["Processo SEI", requerimento.num_processo_sei_requerimento],
+      [
+        "Recebimento OPM",
+        `${formatDate(requerimento.data_recebimento_opm)} ${formatTime(
+          requerimento.hora_recebimento_opm
+        )}`,
+      ],
+      ["Data-base da correção", formatDate(calculo.data_base_correcao)],
+      ["Limite de prescrição (5 anos)", formatDate(calculo.data_limite_prescricao)],
+      ["Planilha de referência", calculo.versao_planilha],
+    ],
+    42
+  );
+
+  y = addPdfTable(
+    doc,
+    "Lançamentos",
+    [
+      "#",
+      "Data",
+      "Evento",
+      "Aux. saúde",
+      "Base",
+      "Fator IPCA-E",
+      "Dif. original",
+      "% aplic.",
+      "Dif. ajustada",
+      "Corrigido",
+      "Prescrito",
+    ],
+    calculo.lancamentos.map((l) => [
+      l.ordem,
+      formatDate(l.data_recebido),
+      l.tipo_evento,
+      l.tipo_auxilio_saude,
+      brl(l.base_complementar),
+      fator8(l.fator_correcao),
+      brl(l.diferenca_original),
+      pct(l.percentual_aplicavel),
+      brl(l.diferenca_ajustada),
+      l.prescrito ? "---" : brl(l.valor_corrigido_ajustado),
+      l.prescrito ? "SIM" : "NÃO",
+    ]),
+    y + 8
+  );
+
+  if (calculo.afastamentos.length) {
+    y = addPdfTable(
+      doc,
+      "Afastamentos",
+      ["Modalidade", "Início", "Fim", "Avos por ano", "Observação"],
+      calculo.afastamentos.map((a) => [
+        a.modalidade,
+        formatDate(a.data_inicio),
+        formatDate(a.data_fim),
+        ANOS_AFASTAMENTO.filter((ano) => (a.avos_por_ano[ano] ?? 0) > 0)
+          .map((ano) => `${ano}: ${a.avos_por_ano[ano]}`)
+          .join("  ") || "-",
+        a.observacao,
+      ]),
+      y + 8
+    );
+  }
+
+  y = addPdfTable(
+    doc,
+    "Resumo por evento",
+    [
+      "Evento",
+      "Ano",
+      "Data evento",
+      "Tipo aux. saúde",
+      "Base",
+      "Fator IPCA-E",
+      "Dif. ajustada",
+      "Dif. corrigida",
+    ],
+    calculo.resumo.map((r) => [
+      r.tipo_evento,
+      r.ano,
+      r.data_evento ? formatDate(r.data_evento) : "-",
+      r.tipo_auxilio_saude || "-",
+      brl(r.base_complementar),
+      fator8(r.fator_correcao),
+      r.prescrito ? "Prescrito" : brl(r.diferenca_ajustada),
+      r.prescrito ? "---" : brl(r.diferenca_corrigida),
+    ]),
+    y + 8
+  );
+
+  addPdfSection(
+    doc,
+    "Totais a receber (corrigidos pelo IPCA-E)",
+    [
+      ["Total Abono", brl(calculo.total_abono_corrigido)],
+      ["Total 1/3 Férias", brl(calculo.total_terco_ferias_corrigido)],
+      ["Total 13º", brl(calculo.total_decimo_terceiro_corrigido)],
+      ["Total geral a receber", brl(calculo.total_geral_a_receber)],
+    ],
+    y + 8
+  );
+
+  doc.save(`${calculoFileBase(requerimento)}.pdf`);
+}
+
+function styledSheet(
+  headers: string[],
+  dataRows: Array<Array<string | number>>,
+  textColumns: number[] = []
+): ExcelWorksheet {
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...dataRows]) as ExcelWorksheet;
+  const lastColumn = headers.length - 1;
+  worksheet["!cols"] = computeColumnWidths(headers, dataRows);
+  worksheet["!rows"] = [{ hpt: 32 }];
+  styleRange(worksheet, { s: { r: 0, c: 0 }, e: { r: 0, c: lastColumn } }, () => headerStyle);
+  if (dataRows.length) {
+    styleRange(
+      worksheet,
+      { s: { r: 1, c: 0 }, e: { r: dataRows.length, c: lastColumn } },
+      (row, column) => {
+        const isText = textColumns.includes(column);
+        const zebra = row % 2 === 0;
+        if (isText) return zebra ? zebraTextStyle : textBodyStyle;
+        return zebra ? zebraStyle : bodyStyle;
+      }
+    );
+  }
+  return worksheet;
+}
+
+export function exportCalculoExcel(requerimento: Requerimento, calculo: Calculo) {
+  const lancHeaders = [
+    "#",
+    "Data recebida",
+    "Evento",
+    "Tipo aux. saúde",
+    "Aux. alimentação",
+    "Aux. saúde aplicável",
+    "Base complementar",
+    "Avos 13º",
+    "Dif. 1/3 férias",
+    "Dif. abono",
+    "Dif. 13º",
+    "Diferença original",
+    "Competência",
+    "Fator IPCA-E",
+    "Corrigido original",
+    "% aplicável",
+    "Diferença ajustada",
+    "Corrigido ajustado",
+    "Afastamento reflexo",
+    "Prescrito",
+    "Motivo",
+  ];
+  const lancRows = calculo.lancamentos.map((l) => [
+    l.ordem,
+    formatDate(l.data_recebido),
+    l.tipo_evento,
+    l.tipo_auxilio_saude,
+    brl(l.valor_auxilio_alimentacao),
+    brl(l.valor_auxilio_saude_aplicavel),
+    brl(l.base_complementar),
+    Number(l.avos_13),
+    brl(l.diferenca_terco_ferias),
+    brl(l.diferenca_abono),
+    brl(l.diferenca_13),
+    brl(l.diferenca_original),
+    mesAno(l.competencia_correcao),
+    fator8(l.fator_correcao),
+    brl(l.valor_corrigido_original),
+    pct(l.percentual_aplicavel),
+    brl(l.diferenca_ajustada),
+    l.prescrito ? "---" : brl(l.valor_corrigido_ajustado),
+    l.tem_afastamento_reflexo ? "SIM" : "NÃO",
+    l.prescrito ? "SIM" : "NÃO",
+    l.motivo_ajuste,
+  ]);
+
+  const afastHeaders = [
+    "Modalidade",
+    "Início",
+    "Fim",
+    ...ANOS_AFASTAMENTO.map((ano) => `Avos ${ano}`),
+    "Observação",
+  ];
+  const afastRows = calculo.afastamentos.map((a) => [
+    a.modalidade,
+    formatDate(a.data_inicio),
+    formatDate(a.data_fim),
+    ...ANOS_AFASTAMENTO.map((ano) => a.avos_por_ano[ano] ?? 0),
+    a.observacao,
+  ]);
+
+  const resumoHeaders = [
+    "Evento",
+    "Ano",
+    "Data evento",
+    "Tipo aux. saúde",
+    "Aux. saúde",
+    "Aux. alimentação",
+    "Base",
+    "Avos 13º",
+    "Fator IPCA-E",
+    "Diferença ajustada",
+    "Diferença corrigida",
+    "Prescrito",
+  ];
+  const resumoRows: Array<Array<string | number>> = calculo.resumo.map((r) => [
+    r.tipo_evento,
+    r.ano,
+    r.data_evento ? formatDate(r.data_evento) : "-",
+    r.tipo_auxilio_saude || "-",
+    brl(r.valor_auxilio_saude),
+    brl(r.valor_auxilio_alimentacao),
+    brl(r.base_complementar),
+    Number(r.avos_13),
+    fator8(r.fator_correcao),
+    r.prescrito ? "Prescrito" : brl(r.diferenca_ajustada),
+    r.prescrito ? "---" : brl(r.diferenca_corrigida),
+    r.prescrito ? "SIM" : "NÃO",
+  ]);
+  resumoRows.push([]);
+  resumoRows.push(["Total Abono", "", "", "", "", "", "", "", "", "", brl(calculo.total_abono_corrigido), ""]);
+  resumoRows.push(["Total 1/3 Férias", "", "", "", "", "", "", "", "", "", brl(calculo.total_terco_ferias_corrigido), ""]);
+  resumoRows.push(["Total 13º", "", "", "", "", "", "", "", "", "", brl(calculo.total_decimo_terceiro_corrigido), ""]);
+  resumoRows.push(["Total geral a receber", "", "", "", "", "", "", "", "", "", brl(calculo.total_geral_a_receber), ""]);
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    workbook,
+    styledSheet(lancHeaders, lancRows, [2, 3, 12, 20]),
+    "Lançamentos"
+  );
+  XLSX.utils.book_append_sheet(
+    workbook,
+    styledSheet(afastHeaders, afastRows, [0, afastHeaders.length - 1]),
+    "Afastamentos"
+  );
+  XLSX.utils.book_append_sheet(
+    workbook,
+    styledSheet(resumoHeaders, resumoRows, [0, 3]),
+    "Resumo"
+  );
+  XLSX.writeFile(workbook, `${calculoFileBase(requerimento)}.xlsx`);
 }

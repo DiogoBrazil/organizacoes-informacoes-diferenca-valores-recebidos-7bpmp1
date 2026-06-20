@@ -50,3 +50,6 @@ class Requerimento(Base):
     )
 
     policial: Mapped["PolicialMilitar"] = relationship(back_populates="requerimentos")
+    calculo: Mapped["Calculo | None"] = relationship(
+        back_populates="requerimento", uselist=False, cascade="all, delete-orphan"
+    )

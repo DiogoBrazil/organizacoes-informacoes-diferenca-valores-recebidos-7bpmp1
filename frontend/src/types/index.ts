@@ -34,6 +34,7 @@ export interface Policial {
   posto_graduacao: PostoGraduacao;
   matricula: number;
   nome_completo: string;
+  opm: string;
 }
 
 export interface Requerimento {
@@ -75,4 +76,104 @@ export type RequerimentoPayload = Omit<
 
 export interface ApiError {
   detail?: string;
+}
+
+// ---- Módulo de cálculo de diferenças ---------------------------------------
+export const TIPOS_EVENTO = ["ABONO", "1/3-FÉRIAS", "13º"] as const;
+export type TipoEvento = (typeof TIPOS_EVENTO)[number];
+
+export const TIPOS_AUX_SAUDE = ["SAUDE", "CONDICIONAL"] as const;
+export type TipoAuxSaude = (typeof TIPOS_AUX_SAUDE)[number];
+
+// Modalidades oferecidas para seleção (constam da aba Listas da planilha).
+export const MODALIDADES_AFASTAMENTO = [
+  "LTIP",
+  "LTSD",
+  "LAC",
+  "DESERTOR",
+  "PRESO TRANS. JULG.",
+  "EXCLUÍDO",
+] as const;
+export type ModalidadeAfastamento = (typeof MODALIDADES_AFASTAMENTO)[number];
+
+export interface CalculoLancamentoInput {
+  data_recebido: string;
+  tipo_evento: TipoEvento;
+  tipo_auxilio_saude: TipoAuxSaude;
+}
+
+export interface CalculoAfastamentoInput {
+  modalidade: ModalidadeAfastamento;
+  data_inicio: string;
+  data_fim: string;
+}
+
+export interface CalculoIn {
+  lancamentos: CalculoLancamentoInput[];
+  afastamentos: CalculoAfastamentoInput[];
+}
+
+export interface CalculoLancamento extends CalculoLancamentoInput {
+  ordem: number;
+  ano: number;
+  mes: number;
+  valor_auxilio_alimentacao: number;
+  valor_auxilio_saude_aplicavel: number;
+  base_complementar: number;
+  avos_13: number;
+  diferenca_terco_ferias: number;
+  diferenca_abono: number;
+  diferenca_13: number;
+  diferenca_original: number;
+  competencia_correcao: string;
+  fator_correcao: number;
+  valor_corrigido_original: number;
+  percentual_aplicavel: number;
+  diferenca_ajustada: number;
+  valor_corrigido_ajustado: number;
+  tem_afastamento_reflexo: boolean;
+  prescrito: boolean;
+  motivo_ajuste: string;
+}
+
+export interface CalculoAfastamento {
+  modalidade: string;
+  data_inicio: string;
+  data_fim: string;
+  avos_por_ano: Record<string, number>;
+  observacao: string;
+}
+
+export interface ResumoLinha {
+  tipo_evento: TipoEvento;
+  ano: number;
+  data_evento: string | null;
+  tipo_auxilio_saude: string;
+  valor_auxilio_saude: number;
+  valor_auxilio_alimentacao: number;
+  base_complementar: number;
+  avos_13: number;
+  fator_correcao: number;
+  diferenca_ajustada: number;
+  diferenca_corrigida: number;
+  prescrito: boolean;
+}
+
+export interface Calculo {
+  id: string | null;
+  requerimento_id: string;
+  data_base_correcao: string;
+  data_limite_prescricao: string;
+  versao_planilha: string;
+  total_abono_corrigido: number;
+  total_terco_ferias_corrigido: number;
+  total_decimo_terceiro_corrigido: number;
+  total_geral_a_receber: number;
+  avos_13_por_ano: Record<string, number>;
+  lancamentos: CalculoLancamento[];
+  afastamentos: CalculoAfastamento[];
+  resumo: ResumoLinha[];
+  persistido: boolean;
+  criado_em: string | null;
+  atualizado_em: string | null;
 }

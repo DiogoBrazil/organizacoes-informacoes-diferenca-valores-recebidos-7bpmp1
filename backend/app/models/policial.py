@@ -14,6 +14,7 @@ class PolicialMilitar(Base):
     posto_graduacao: Mapped[str] = mapped_column(String(20), index=True, nullable=False)
     matricula: Mapped[int] = mapped_column(Integer, unique=True, index=True, nullable=False)
     nome_completo: Mapped[str] = mapped_column(String(180), index=True, nullable=False)
+    opm: Mapped[str] = mapped_column(String(60), nullable=False, default="7º BPM")
 
     requerimentos: Mapped[list["Requerimento"]] = relationship(
         back_populates="policial", cascade="all, delete-orphan"

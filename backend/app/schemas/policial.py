@@ -9,6 +9,15 @@ class PolicialBase(BaseModel):
     posto_graduacao: PostoGraduacao
     matricula: int = Field(ge=100000000, le=100099999)
     nome_completo: str = Field(min_length=3, max_length=180)
+    opm: str = Field(default="7º BPM", min_length=2, max_length=60)
+
+    @field_validator("opm")
+    @classmethod
+    def validar_opm(cls, value: str) -> str:
+        opm = value.strip()
+        if len(opm) < 2:
+            raise ValueError("A OPM é obrigatória.")
+        return opm
 
     @field_validator("matricula")
     @classmethod
