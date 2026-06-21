@@ -37,17 +37,31 @@ function nomeArquivoDaResposta(
   return simples ? simples[1] : fallback;
 }
 
+// Nome no padrão pedido pela CP: matricula_posto-graduacao_nome-completo_.ods
+// (ex.: 100094023_ST_PM_DIOGO_RIBEIRO_.ods).
+export function nomeArquivoOds(policial: {
+  matricula: number | string;
+  posto_graduacao: string;
+  nome_completo: string;
+}) {
+  const base = `${policial.matricula}_${policial.posto_graduacao}_${policial.nome_completo}_`;
+  return `${base.replace(/\//g, "-").replace(/\s+/g, "_")}.ods`;
+}
+
 // Baixa a planilha oficial (modelo CP9) em .ods gerada no backend a partir do
-// template (exige cálculo salvo).
-export async function baixarOdsCalculo(requerimentoId: string) {
+// template (exige cálculo salvo). O nome do arquivo é montado no cliente (o
+// header Content-Disposition não é exposto via CORS).
+export async function baixarOdsCalculo(requerimentoId: string, nomeArquivo?: string) {
   const response = await api.get(
     `/requerimentos/${requerimentoId}/calculo/export.ods`,
     { responseType: "blob" }
   );
-  const nome = nomeArquivoDaResposta(
-    response.headers["content-disposition"],
-    "calculo_diferenca.ods"
-  );
+  const nome =
+    nomeArquivo ??
+    nomeArquivoDaResposta(
+      response.headers["content-disposition"],
+      "calculo_diferenca.ods"
+    );
   const url = window.URL.createObjectURL(response.data as Blob);
   const link = document.createElement("a");
   link.href = url;

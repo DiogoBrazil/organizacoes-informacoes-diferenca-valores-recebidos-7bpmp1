@@ -12,6 +12,7 @@ import {
   formatBRL,
   formatFator,
   getCalculo,
+  nomeArquivoOds,
   salvarCalculo,
   simularCalculo,
 } from "../services/calculoApi";
@@ -161,10 +162,10 @@ export default function CalculoFormPage() {
   // Planilha oficial (modelo CP9) em .ods, gerada no backend a partir do cálculo
   // salvo (exige snapshot persistido).
   async function handleExportOds() {
-    if (!id) return;
+    if (!id || !requerimento) return;
     try {
       await withLoader(
-        () => baixarOdsCalculo(id),
+        () => baixarOdsCalculo(id, nomeArquivoOds(requerimento.policial)),
         "Gerando planilha oficial (.ods)..."
       );
     } catch (error) {

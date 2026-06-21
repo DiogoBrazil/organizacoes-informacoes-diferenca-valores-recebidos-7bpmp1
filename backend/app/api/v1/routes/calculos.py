@@ -149,8 +149,9 @@ def excluir_calculo(requerimento_id: UUID, db: DbSession, _: CurrentUser) -> Non
 
 
 def _nome_arquivo_ods(requerimento: Requerimento) -> str:
+    # Padrão pedido pela CP: matricula_posto-graduacao_nome-completo_.ods
     pol = requerimento.policial
-    base = f"{pol.matricula}_{pol.posto_graduacao}_{pol.nome_completo}_DIF_ABONO_TERÇO_13º"
+    base = f"{pol.matricula}_{pol.posto_graduacao}_{pol.nome_completo}_"
     base = base.replace("/", "-").replace(" ", "_")
     return f"{base}.ods"
 
