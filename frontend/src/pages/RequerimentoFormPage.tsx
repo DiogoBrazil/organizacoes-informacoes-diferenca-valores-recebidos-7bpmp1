@@ -1,10 +1,11 @@
-import { FileText } from "lucide-react";
+import { FileText, UserPlus } from "lucide-react";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import FormActions from "../components/FormActions";
 import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
+import PolicialFormModal from "../components/PolicialFormModal";
 import { useLoader } from "../context/LoaderContext";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
@@ -76,6 +77,7 @@ export default function RequerimentoFormPage() {
   const [policiais, setPoliciais] = useState<Policial[]>([]);
   const [buscaPolicial, setBuscaPolicial] = useState("");
   const [mostrarBuscaPolicial, setMostrarBuscaPolicial] = useState(false);
+  const [modalPolicialAberto, setModalPolicialAberto] = useState(false);
   const [form, setForm] = useState<FormScalars>(initialForm);
   const [eventos, setEventos] = useState<EventosGrid>({});
 
@@ -283,10 +285,21 @@ export default function RequerimentoFormPage() {
           </div>
         </FieldSection>
 
-        <FieldSection title="Dados do Policial">
+        <FieldSection title="Dados do Policial Militar">
           <div className="grid gap-4 lg:grid-cols-[1fr_280px_220px]">
-            <label className="block">
-              <span className="text-sm font-semibold">Buscar Policial</span>
+            <div className="block">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold">Buscar Policial Militar</span>
+                <button
+                  type="button"
+                  onClick={() => setModalPolicialAberto(true)}
+                  className="focus-ring inline-flex items-center gap-1 rounded border border-gov-primary/40 px-2 py-1 text-xs font-semibold text-gov-primary hover:bg-blue-50"
+                  title="Cadastrar novo policial militar"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Novo
+                </button>
+              </div>
               <input
                 value={buscaPolicial}
                 onFocus={() => setMostrarBuscaPolicial(true)}
@@ -316,11 +329,21 @@ export default function RequerimentoFormPage() {
                     </button>
                   ))}
                   {buscaPolicial.trim() && !policiaisFiltrados.length ? (
-                    <div className="px-3 py-3 text-sm text-gov-muted">Nenhum policial encontrado.</div>
+                    <div className="px-3 py-3 text-sm text-gov-muted">
+                      Nenhum policial encontrado.
+                      <button
+                        type="button"
+                        onClick={() => setModalPolicialAberto(true)}
+                        className="focus-ring ml-1 inline-flex items-center gap-1 font-semibold text-gov-primary hover:underline"
+                      >
+                        <UserPlus className="h-3.5 w-3.5" />
+                        Cadastrar novo policial militar
+                      </button>
+                    </div>
                   ) : null}
                 </div>
               ) : null}
-            </label>
+            </div>
             <label className="block">
               <span className="text-sm font-semibold">Posto/Graduação</span>
               <input
@@ -415,6 +438,18 @@ export default function RequerimentoFormPage() {
 
         <FormActions saving={saving} />
       </form>
+
+      <PolicialFormModal
+        open={modalPolicialAberto}
+        onClose={() => setModalPolicialAberto(false)}
+        onCreated={(novo) => {
+          setPoliciais((prev) => [novo, ...prev]);
+          updateField("policial_id", novo.id);
+          setBuscaPolicial(`${novo.matricula} - ${novo.nome_completo}`);
+          setMostrarBuscaPolicial(false);
+          setModalPolicialAberto(false);
+        }}
+      />
     </>
   );
 }

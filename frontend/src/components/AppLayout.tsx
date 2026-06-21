@@ -8,7 +8,7 @@ import { useLoader } from "../context/LoaderContext";
 const navItems = [
   { to: "/", label: "Início", icon: Home },
   { to: "/usuarios", label: "Usuários", icon: Users },
-  { to: "/policiais", label: "Policiais", icon: Shield },
+  { to: "/policiais", label: "Policiais Militares", icon: Shield },
   { to: "/requerimentos", label: "Requerimentos", icon: FileText },
 ];
 
