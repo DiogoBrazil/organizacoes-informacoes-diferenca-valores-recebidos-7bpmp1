@@ -1,8 +1,41 @@
-import type { Requerimento } from "../types";
+import type { Requerimento, TipoEvento } from "../types";
 
 export interface RequerimentoReportColumn {
   header: string;
   value: (item: Requerimento, index: number) => string | number;
+}
+
+const MESES_ABREV = [
+  "jan", "fev", "mar", "abr", "mai", "jun",
+  "jul", "ago", "set", "out", "nov", "dez",
+];
+
+function eventoDe(item: Requerimento, tipo: TipoEvento, ano: number) {
+  return item.eventos?.find((e) => e.tipo_evento === tipo && e.ano === ano);
+}
+
+// Reconstrói o texto "mmm/aaaa" (data de pagamento) que as exportações da lista
+// exibiam a partir das colunas antigas, agora derivado dos eventos.
+function mesAnoEvento(item: Requerimento, tipo: TipoEvento, ano: number) {
+  const evento = eventoDe(item, tipo, ano);
+  if (!evento?.data_recebido) return "";
+  const [yyyy, mm] = evento.data_recebido.split("-");
+  return `${MESES_ABREV[Number(mm) - 1]}/${yyyy}`;
+}
+
+// Valor do auxílio saúde do ano de referência (prioridade Abono -> 1/3 -> 13º);
+// para registros migrados todos compartilham o mesmo valor anual antigo.
+function auxSaudeAno(item: Requerimento, ano: number) {
+  for (const tipo of ["ABONO", "1/3-FÉRIAS", "13º"] as TipoEvento[]) {
+    const evento = eventoDe(item, tipo, ano);
+    if (evento && evento.valor_auxilio_saude !== null && evento.valor_auxilio_saude !== "") {
+      return Number(evento.valor_auxilio_saude).toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+  }
+  return "";
 }
 
 export function formatDate(value: string) {
@@ -47,22 +80,22 @@ export const requerimentoReportColumns: RequerimentoReportColumn[] = [
     value: (item) => simNao(item.gozou_ferias_5_anos),
   },
   { header: "Prioridade", value: (item) => simNao(item.tem_prioridade_legal) },
-  { header: "Abono Pecuniario 2021", value: (item) => text(item.abono_pecuniario_2021) },
-  { header: "1/3 ferias 2021", value: (item) => text(item.ferias_1_3_2021) },
-  { header: "Abono Pecuniario 2022", value: (item) => text(item.abono_pecuniario_2022) },
-  { header: "1/3 ferias 2022", value: (item) => text(item.ferias_1_3_2022) },
-  { header: "Abono Pecuniario 2023", value: (item) => text(item.abono_pecuniario_2023) },
-  { header: "1/3 ferias 2023", value: (item) => text(item.ferias_1_3_2023) },
-  { header: "Abono Pecuniario 2024", value: (item) => text(item.abono_pecuniario_2024) },
-  { header: "1/3 ferias 2024", value: (item) => text(item.ferias_1_3_2024) },
-  { header: "Abono Pecuniario 2025", value: (item) => text(item.abono_pecuniario_2025) },
-  { header: "1/3 ferias 2025", value: (item) => text(item.ferias_1_3_2025) },
-  { header: "Auxilio Saúde 2021", value: (item) => currencyWithSymbol(item.auxilio_saude_2021) },
-  { header: "Auxilio Saúde 2022", value: (item) => currencyWithSymbol(item.auxilio_saude_2022) },
-  { header: "Auxilio Saúde 2023", value: (item) => currencyWithSymbol(item.auxilio_saude_2023) },
-  { header: "Auxilio Saúde 2024", value: (item) => currencyWithSymbol(item.auxilio_saude_2024) },
-  { header: "Auxilio Saúde 2025", value: (item) => currencyWithSymbol(item.auxilio_saude_2025) },
-  { header: "Auxilio Saúde 2026", value: (item) => currencyWithSymbol(item.auxilio_saude_2026) },
+  { header: "Abono Pecuniario 2021", value: (item) => mesAnoEvento(item, "ABONO", 2021) },
+  { header: "1/3 ferias 2021", value: (item) => mesAnoEvento(item, "1/3-FÉRIAS", 2021) },
+  { header: "Abono Pecuniario 2022", value: (item) => mesAnoEvento(item, "ABONO", 2022) },
+  { header: "1/3 ferias 2022", value: (item) => mesAnoEvento(item, "1/3-FÉRIAS", 2022) },
+  { header: "Abono Pecuniario 2023", value: (item) => mesAnoEvento(item, "ABONO", 2023) },
+  { header: "1/3 ferias 2023", value: (item) => mesAnoEvento(item, "1/3-FÉRIAS", 2023) },
+  { header: "Abono Pecuniario 2024", value: (item) => mesAnoEvento(item, "ABONO", 2024) },
+  { header: "1/3 ferias 2024", value: (item) => mesAnoEvento(item, "1/3-FÉRIAS", 2024) },
+  { header: "Abono Pecuniario 2025", value: (item) => mesAnoEvento(item, "ABONO", 2025) },
+  { header: "1/3 ferias 2025", value: (item) => mesAnoEvento(item, "1/3-FÉRIAS", 2025) },
+  { header: "Auxilio Saúde 2021", value: (item) => currencyWithSymbol(auxSaudeAno(item, 2021)) },
+  { header: "Auxilio Saúde 2022", value: (item) => currencyWithSymbol(auxSaudeAno(item, 2022)) },
+  { header: "Auxilio Saúde 2023", value: (item) => currencyWithSymbol(auxSaudeAno(item, 2023)) },
+  { header: "Auxilio Saúde 2024", value: (item) => currencyWithSymbol(auxSaudeAno(item, 2024)) },
+  { header: "Auxilio Saúde 2025", value: (item) => currencyWithSymbol(auxSaudeAno(item, 2025)) },
+  { header: "Auxilio Saúde 2026", value: (item) => currencyWithSymbol(auxSaudeAno(item, 2026)) },
   { header: "Enviado para CP", value: (item) => simNao(item.enviado_para_cp) },
 ];
 

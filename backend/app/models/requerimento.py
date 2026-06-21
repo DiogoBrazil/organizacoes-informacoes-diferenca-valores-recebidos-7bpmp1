@@ -26,27 +26,17 @@ class Requerimento(Base):
     tem_prioridade_legal: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     enviado_para_cp: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    abono_pecuniario_2021: Mapped[str | None] = mapped_column(String(20))
-    ferias_1_3_2021: Mapped[str | None] = mapped_column(String(20))
-    abono_pecuniario_2022: Mapped[str | None] = mapped_column(String(20))
-    ferias_1_3_2022: Mapped[str | None] = mapped_column(String(20))
-    abono_pecuniario_2023: Mapped[str | None] = mapped_column(String(20))
-    ferias_1_3_2023: Mapped[str | None] = mapped_column(String(20))
-    abono_pecuniario_2024: Mapped[str | None] = mapped_column(String(20))
-    ferias_1_3_2024: Mapped[str | None] = mapped_column(String(20))
-    abono_pecuniario_2025: Mapped[str | None] = mapped_column(String(20))
-    ferias_1_3_2025: Mapped[str | None] = mapped_column(String(20))
-
-    auxilio_saude_2021: Mapped[str | None] = mapped_column(String(20))
-    auxilio_saude_2022: Mapped[str | None] = mapped_column(String(20))
-    auxilio_saude_2023: Mapped[str | None] = mapped_column(String(20))
-    auxilio_saude_2024: Mapped[str | None] = mapped_column(String(20))
-    auxilio_saude_2025: Mapped[str | None] = mapped_column(String(20))
-    auxilio_saude_2026: Mapped[str | None] = mapped_column(String(20))
-
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     atualizado_em: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     policial: Mapped["PolicialMilitar"] = relationship(back_populates="requerimentos")
+    eventos: Mapped[list["RequerimentoEvento"]] = relationship(
+        back_populates="requerimento",
+        cascade="all, delete-orphan",
+        order_by="RequerimentoEvento.ano, RequerimentoEvento.tipo_evento",
+    )
+    calculo: Mapped["Calculo | None"] = relationship(
+        back_populates="requerimento", uselist=False, cascade="all, delete-orphan"
+    )
