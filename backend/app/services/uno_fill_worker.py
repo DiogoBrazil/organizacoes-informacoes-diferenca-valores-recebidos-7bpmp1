@@ -24,6 +24,8 @@ from com.sun.star.beans import PropertyValue
 
 UNO_HOST = os.getenv("LIBREOFFICE_UNO_HOST", "127.0.0.1")
 UNO_PORT = os.getenv("LIBREOFFICE_UNO_PORT", "2002")
+# Senha de abertura aplicada ao .ods exportado (mesma do modelo oficial da CP).
+ODS_PASSWORD = os.getenv("ODS_EXPORT_PASSWORD", "123456")
 
 # Flags de limpeza (VALUE|STRING|DATETIME|FORMULA), preservando estilos/formatos.
 CLEAR_FLAGS = 1 | 2 | 16 | 4
@@ -113,7 +115,10 @@ def main():
             doc.Sheets.getByName("Afastamentos"), dados["afastamentos"]
         )
         doc.calculateAll()
-        doc.storeToURL(file_url(saida), (prop("FilterName", "calc8"),))
+        save_args = [prop("FilterName", "calc8")]
+        if ODS_PASSWORD:
+            save_args.append(prop("Password", ODS_PASSWORD))
+        doc.storeToURL(file_url(saida), tuple(save_args))
     finally:
         doc.close(False)
 
