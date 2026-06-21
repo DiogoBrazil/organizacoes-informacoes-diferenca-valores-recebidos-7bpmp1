@@ -1,6 +1,8 @@
+from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 from app.api.deps import CurrentUser, DbSession
 from app.crud import calculo as crud
@@ -16,6 +18,7 @@ from app.schemas.calculo import (
     ResumoLinhaPublic,
 )
 from app.services import calculo_service as service
+from app.services import export_ods_service
 
 router = APIRouter()
 
@@ -143,3 +146,30 @@ def excluir_calculo(requerimento_id: UUID, db: DbSession, _: CurrentUser) -> Non
     if not calculo:
         raise HTTPException(status_code=404, detail="Cálculo não encontrado.")
     crud.delete(db, calculo)
+
+
+def _nome_arquivo_ods(requerimento: Requerimento) -> str:
+    pol = requerimento.policial
+    base = f"{pol.matricula}_{pol.posto_graduacao}_{pol.nome_completo}_DIF_ABONO_TERÇO_13º"
+    base = base.replace("/", "-").replace(" ", "_")
+    return f"{base}.ods"
+
+
+@router.get("/{requerimento_id}/calculo/export.ods")
+def exportar_calculo_ods(
+    requerimento_id: UUID, db: DbSession, _: CurrentUser
+) -> StreamingResponse:
+    """Gera a planilha oficial (modelo CP9) em .ods preenchendo o template."""
+    requerimento = _get_requerimento(db, requerimento_id)
+    calculo = crud.get_by_requerimento(db, requerimento_id)
+    if not calculo:
+        raise HTTPException(
+            status_code=404, detail="Este requerimento ainda não possui cálculo salvo."
+        )
+    conteudo = export_ods_service.gerar_ods(requerimento, calculo)
+    nome = _nome_arquivo_ods(requerimento)
+    return StreamingResponse(
+        iter([conteudo]),
+        media_type="application/vnd.oasis.opendocument.spreadsheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(nome)}"},
+    )

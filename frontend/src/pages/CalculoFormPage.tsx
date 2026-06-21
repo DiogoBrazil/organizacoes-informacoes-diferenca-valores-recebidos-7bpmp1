@@ -8,6 +8,7 @@ import { useLoader } from "../context/LoaderContext";
 import { useToast } from "../context/ToastContext";
 import { api, getErrorMessage } from "../services/api";
 import {
+  baixarOdsCalculo,
   formatBRL,
   formatFator,
   getCalculo,
@@ -152,6 +153,20 @@ export default function CalculoFormPage() {
     try {
       if (tipo === "pdf") await exportCalculoPdf(requerimento, calculo);
       else exportCalculoExcel(requerimento, calculo);
+    } catch (error) {
+      showToast(getErrorMessage(error), "error");
+    }
+  }
+
+  // Planilha oficial (modelo CP9) em .ods, gerada no backend a partir do cálculo
+  // salvo (exige snapshot persistido).
+  async function handleExportOds() {
+    if (!id) return;
+    try {
+      await withLoader(
+        () => baixarOdsCalculo(id),
+        "Gerando planilha oficial (.ods)..."
+      );
     } catch (error) {
       showToast(getErrorMessage(error), "error");
     }
@@ -444,6 +459,20 @@ export default function CalculoFormPage() {
             Cálculo salvo (snapshot congelado). Use “Salvar” para recalcular e sobrescrever.
           </span>
         ) : null}
+        <button
+          type="button"
+          disabled={!persistido || semLancamentos}
+          onClick={handleExportOds}
+          className="btn btn-outline"
+          title={
+            persistido
+              ? "Planilha oficial no modelo da CP (.ods)"
+              : "Salve o cálculo para gerar a planilha oficial (.ods)"
+          }
+        >
+          <Download className="h-4 w-4" />
+          Planilha CP (.ods)
+        </button>
         <button
           type="button"
           disabled={!calculo || semLancamentos}
