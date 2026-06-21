@@ -102,7 +102,11 @@ def update_requerimento(
 ) -> Requerimento:
     for field, value in data.model_dump(exclude={"eventos"}).items():
         setattr(requerimento, field, value)
-    # substitui os eventos (cascade delete-orphan remove os antigos)
+    # Remove os eventos antigos e força o DELETE (flush) antes de inserir os novos,
+    # evitando violação transitória da unique (requerimento_id, tipo_evento, ano)
+    # quando os eventos recriados repetem o mesmo tipo/ano.
+    requerimento.eventos.clear()
+    db.flush()
     requerimento.eventos = _eventos_models(data)
     db.commit()
     db.refresh(requerimento)
