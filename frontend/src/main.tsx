@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import CalculoFormPage from "./pages/CalculoFormPage";
 import { AuthProvider } from "./context/AuthContext";
 import { LoaderProvider } from "./context/LoaderContext";
 import { ToastProvider } from "./context/ToastContext";
@@ -45,6 +46,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="requerimentos" element={<RequerimentosPage />} />
               <Route path="requerimentos/novo" element={<RequerimentoFormPage />} />
               <Route path="requerimentos/:id/visualizar" element={<RequerimentoViewPage />} />
+              <Route path="requerimentos/:id/calculo" element={<CalculoFormPage />} />
               <Route path="requerimentos/:id/editar" element={<RequerimentoFormPage />} />
               <Route path="requerimentos/:posto" element={<RequerimentosPorPostoPage />} />
             </Route>

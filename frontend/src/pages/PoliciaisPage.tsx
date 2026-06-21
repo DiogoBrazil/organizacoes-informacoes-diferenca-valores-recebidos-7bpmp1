@@ -112,6 +112,7 @@ export default function PoliciaisPage() {
                 <th className="border border-slate-300 px-4 py-3">Posto/Graduação</th>
                 <th className="border border-slate-300 px-4 py-3">Matrícula</th>
                 <th className="border border-slate-300 px-4 py-3">Nome Completo</th>
+                <th className="border border-slate-300 px-4 py-3">OPM</th>
                 <th className="border border-slate-300 px-4 py-3">Ações</th>
               </tr>
             </thead>
@@ -121,6 +122,7 @@ export default function PoliciaisPage() {
                   <td className="border border-slate-300 px-4 py-3 font-semibold">{policial.posto_graduacao}</td>
                   <td className="border border-slate-300 px-4 py-3">{policial.matricula}</td>
                   <td className="border border-slate-300 px-4 py-3">{policial.nome_completo}</td>
+                  <td className="border border-slate-300 px-4 py-3">{policial.opm}</td>
                   <td className="border border-slate-300 px-4 py-3">
                     <div className="flex justify-center gap-2">
                       <Link
@@ -144,7 +146,7 @@ export default function PoliciaisPage() {
               ))}
               {!policiais.length ? (
                 <tr>
-                  <td colSpan={4} className="border border-slate-300 px-4 py-8 text-center text-gov-muted">
+                  <td colSpan={5} className="border border-slate-300 px-4 py-8 text-center text-gov-muted">
                     Nenhum policial militar encontrado.
                   </td>
                 </tr>
