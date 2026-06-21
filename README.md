@@ -57,7 +57,7 @@ traefik/
 ### Autenticação
 
 - Login por e-mail e senha em `/login`.
-- Token JWT salvo no `localStorage` com a chave `pmro_token`.
+- Token JWT salvo no `localStorage`.
 - Redirecionamento automático para login quando a API retorna `401`.
 - Expiração padrão do token: 480 minutos, configurável por
   `ACCESS_TOKEN_EXPIRE_MINUTES`.
