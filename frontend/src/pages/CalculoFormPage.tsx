@@ -66,12 +66,21 @@ export default function CalculoFormPage() {
   useEffect(() => {
     if (!id) return;
     const reqId = id;
+    let ativo = true;
+    setLoading(true);
+    setRequerimento(null);
+    setCalculo(null);
+    setPersistido(false);
+    setAfastamentos([]);
+
     async function carregar() {
       try {
         const { data: req } = await api.get<Requerimento>(`/requerimentos/${reqId}`);
+        if (!ativo) return;
         setRequerimento(req);
         try {
           const existente = await getCalculo(reqId);
+          if (!ativo) return;
           setPersistido(true);
           setCalculo(existente);
           setAfastamentos(
@@ -82,15 +91,23 @@ export default function CalculoFormPage() {
             }))
           );
         } catch {
+          if (!ativo) return;
+          setPersistido(false);
+          setCalculo(null);
+          setAfastamentos([]);
           // sem cálculo salvo ainda — segue para a simulação inicial
         }
       } catch (error) {
-        showToast(getErrorMessage(error), "error");
+        if (ativo) showToast(getErrorMessage(error), "error");
       } finally {
-        setLoading(false);
+        if (ativo) setLoading(false);
       }
     }
     void carregar();
+
+    return () => {
+      ativo = false;
+    };
   }, [id, showToast]);
 
   const payload = useMemo<CalculoIn>(
@@ -102,15 +119,18 @@ export default function CalculoFormPage() {
   // os afastamentos influenciam. Simula a cada alteração (com debounce).
   useEffect(() => {
     if (!id || loading) return;
+    let ativo = true;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        setCalculo(await simularCalculo(id, payload));
+        const resultado = await simularCalculo(id, payload);
+        if (ativo) setCalculo(resultado);
       } catch (error) {
-        showToast(getErrorMessage(error), "error");
+        if (ativo) showToast(getErrorMessage(error), "error");
       }
     }, 350);
     return () => {
+      ativo = false;
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [id, loading, payload, showToast]);

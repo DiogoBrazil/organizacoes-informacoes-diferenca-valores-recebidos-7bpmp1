@@ -4,6 +4,7 @@ from sqlalchemy import String, case, func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.constants import POSTO_ORDEM
+from app.models.calculo import Calculo
 from app.models.policial import PolicialMilitar
 from app.models.requerimento import Requerimento
 from app.models.requerimento_evento import RequerimentoEvento
@@ -32,6 +33,35 @@ def _eventos_models(data: RequerimentoCreate | RequerimentoUpdate) -> list[Reque
         )
         for e in data.eventos
     ]
+
+
+def _eventos_snapshot(eventos) -> list[tuple[str, int, object, object]]:
+    return sorted(
+        (
+            e.tipo_evento,
+            e.ano,
+            e.data_recebido,
+            e.valor_auxilio_saude,
+        )
+        for e in eventos
+    )
+
+
+def _calculo_deve_ser_invalidado(
+    requerimento: Requerimento, data: RequerimentoUpdate
+) -> bool:
+    return (
+        requerimento.policial_id != data.policial_id
+        or requerimento.data_recebimento_opm != data.data_recebimento_opm
+        or _eventos_snapshot(requerimento.eventos) != _eventos_snapshot(data.eventos)
+    )
+
+
+def _delete_calculo_by_requerimento_id(db: Session, requerimento_id: UUID) -> None:
+    calculo = db.scalar(select(Calculo).where(Calculo.requerimento_id == requerimento_id))
+    if calculo:
+        db.delete(calculo)
+        db.flush()
 
 
 def get_requerimento_by_processo_sei(
@@ -100,6 +130,9 @@ def create_requerimento(db: Session, data: RequerimentoCreate) -> Requerimento:
 def update_requerimento(
     db: Session, requerimento: Requerimento, data: RequerimentoUpdate
 ) -> Requerimento:
+    if _calculo_deve_ser_invalidado(requerimento, data):
+        _delete_calculo_by_requerimento_id(db, requerimento.id)
+
     for field, value in data.model_dump(exclude={"eventos"}).items():
         setattr(requerimento, field, value)
     # Remove os eventos antigos e força o DELETE (flush) antes de inserir os novos,
@@ -123,5 +156,6 @@ def set_enviado_para_cp(
 
 
 def delete_requerimento(db: Session, requerimento: Requerimento) -> None:
+    _delete_calculo_by_requerimento_id(db, requerimento.id)
     db.delete(requerimento)
     db.commit()
